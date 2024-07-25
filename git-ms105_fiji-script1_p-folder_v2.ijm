@@ -1,5 +1,6 @@
 // MS105 Fiji Script 1
 // Modified for batch by JEP 07/2024
+// Replaced code with V2-1
 
 /*
  * Macro template to process multiple images in a folder
@@ -32,31 +33,51 @@ function processFile(input, output, file) {
 	print("Processing: " + input + File.separator + file);
 	
 	open(input+File.separator+file);
-	origfn = File.getNameWithoutExtension(file);
+	origfn = File.getNameWithoutExtension(file); // possibly need to delete this line?
+	origft = getTitle(file);
 	
-	
-	for (i = 1; i < 3; i++) {
-		// Duplicate channel i
-		run("Duplicate...", "duplicate channels=" + i);
-		//fdup = File.getNameWithoutExtension(origfn + "-" + i + ".nd2");
-		selectImage(fdup);
+//	for (i = 1; i < 3; i++) {
+//		// Duplicate channel i
+//		run("Duplicate...", "duplicate channels=" + i);
+//		fdup = origfn + "-" + i + ".nd2";
+//		selectImage(fdup);
+//		
+//		// Run exo analysis script of MS105
+//		exo_analysis(input, output)
+//		
+//		// Close all images except original file
+//		selectImage(origftitle);
+//		close("\\Others");
+//	}
+
+
+
+
+	// Testing alternative code idea out
+	if (File.Exists(origfn + "-" + 1 + "_IntensityData.csv")) {
+		print(origfn + "-" + 1 + "_IntensityData.csv already exists. Image skipped.")
+	else{
+		for (i = 1; i < 3; i++) {
+			// Duplicate channel i
+			run("Duplicate...", "duplicate channels=" + i);
+			fdup = origfn + "-" + i + ".nd2";
+			selectImage(fdup);
 		
-		// Run exo analysis script of MS105
-		exo_analysis(input, output, file) // replace file with fdup (file duplicate)? Or maybe need to add extra argument 'fdup'
-		// A potential problem to that would be that exo_analysis currently uses 'file', which may lead to confusion
-		// Maybe don't need fdup to have filenamewithoutextension here, see exo_analysis
+			// Run exo analysis script of MS105
+			exo_analysis(input, output)
 		
-		// Close all images except original file
-		selectImage(origfn);
-		close("\\Others");
+			// Close all images except original file
+			selectImage(origft);
+			close("\\Others");
+		}
+		
 	}
-	
 	
 	run("Close All");
 	print("Saving to: " + output);
 }
 
-function exo_analysis(input, output, file) {
+function exo_analysis(input, output) { 
 	//Modified from Macro of Steve 
 
 	//Clean the environment
@@ -66,7 +87,7 @@ function exo_analysis(input, output, file) {
 	// Get information of the file open
 	title = getTitle();
 	getDimensions(width, height, channels, slices, frames);
-	dir = getDirectory("image");											//// Can comment this line out? It may run a problem if using a duplicated image
+//	dir = getDirectory("image");											//// Can comment this line out? It may run a problem if using a duplicated image
 
 	//Do zstack, select the cell and find maxima - add to ROI
 	run("Z Project...", "projection=[Max Intensity]");
