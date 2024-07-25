@@ -1,6 +1,6 @@
 // MS105 Fiji Script 1
 // Modified for batch by JEP 07/2024
-// Replaced code with V2-1
+// Replaced code with V2-2
 
 /*
  * Macro template to process multiple images in a folder
@@ -64,7 +64,12 @@ function processFile(input, output, file) {
 			selectImage(fdup);
 		
 			// Run exo analysis script of MS105
-			exo_analysis(input, output)
+			if (i == 1) {
+				exo_analysis(input, output)
+			}
+			else {
+				exo_analysis2(input, output)
+			}
 		
 			// Close all images except original file
 			selectImage(origft);
@@ -178,4 +183,8 @@ function exo_analysis(input, output) {
 	print (f, scaleunit);
 	print (f, pixelScale);
 	File.close(f);
+}
+
+function exo_analysis2(input, output) {
+	
 }
