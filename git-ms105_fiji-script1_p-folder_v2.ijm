@@ -1,6 +1,6 @@
 // MS105 Fiji Script 1
 // Modified for batch by JEP 07/2024
-// Replaced code with ms105_fiji-script1_p-folder_v2-5-section-steve.ijm
+// Replaced code with ms105_fiji-script1_p-folder_v2-6-section.ijm
 
 function processFile(input, output, file) {
 	// Leave the print statements until things work, then remove them.
@@ -12,7 +12,7 @@ function processFile(input, output, file) {
 		return ("1");		
 	}
 
-	orig = open(input+File.separator+file);
+	open(input+File.separator+file);
 	origft = getTitle(file);							//// is this redundant with origfn?
 	run("Clear Results");
 	roiManager("reset");
@@ -24,11 +24,11 @@ function processFile(input, output, file) {
 	for (i = 0; i < 2; i++) {
 		recycle = i
 		if (recycle == 0) {							//// is this the right place to do this? I might need to change this. This maybe isn't even the right way to do it.
-			template = run("Duplicate...", "duplicate channels=1");				//// can I do this? template = run(... ?
-			subject = run("Duplicate...", "duplicate channels=2");
+			run("Duplicate...", "title=template duplicate channels=1");				//// can I do this? template = run(... ?
+			run("Duplicate...", "title=subject duplicate channels=2");
 		} else if (recycle == 1) {
-			template = run("Duplicate...", "duplicate channels=2");
-			subject = run("Duplicate...", "duplicate channels=1");
+			run("Duplicate...", "title=template duplicate channels=2");
+			run("Duplicate...", "title=subject duplicate channels=1");
 		} else {
 			print("Too many recycles! Recycles >= 1");
 			return("1");
@@ -37,9 +37,12 @@ function processFile(input, output, file) {
 		// Code & functions here.
 		template_spot_detection(output, template, origfn, recycle);
 		
-		exo_analysis_general(output, template, origfn, recycle);				//// Steve comment: no need for 'template' or 'subject' as they aren't variables to use
+		exo_analysis_general(output, template, origfn, recycle);			//// Steve comment: no need for 'template' or 'subject' as they aren't variables to use
 		exo_analysis_general(output, subject, origfn, recycle);			//// JP: need to figure out a way to run twice with template and then subject
-		
+//		//// Maybe run like this?
+//		exo_analysis_general(output, "template", origfn, recycle);
+//		exo_analysis_general(output, "subject", origfn, recycle);
+
 		selectImage(orig);
 		close("\\Others");
 
@@ -54,6 +57,7 @@ function processFile(input, output, file) {
 //------------------------------------------------------------------------------------------------------------------------------------
 // Save ROI of shape drawn around cell. This most probably can get shortened a decent bit.
 function cellROI(output, fn) {
+	selectImage("template");
 	run("Z Project...", "projection=[Max Intensity]");		//// Need to make sure that the correct image is selected at this point.
 	run("Enhance Contrast", "saturated=0.35");
 
@@ -91,7 +95,7 @@ function template_spot_detection (output, template, fn, recycle) {
 	run("Clear Results");
 	run("Clear Outside");
 	run("Select None");
-	roiManager("reset");					//// Steve comments = add this ////
+	roiManager("reset");	// Remove cell outline ROI				//// from speaking with Steve: added this line ////
 	
 	// Find puncta and save results
 	run("Find Maxima..."); 
@@ -103,7 +107,7 @@ function template_spot_detection (output, template, fn, recycle) {
 
 //------------------------------------------------------------------------------------------------------------------------------------
 function exo_analysis_general (output, base, fn, recycle) { //// base = base file name (input template or subject when calling this function).
-	selectImage(base);
+	selectImage(base);										//// base = deprecated
 	getDimensions(width, height, channels, slices, frames);
 	if (base == "template") {
 		imageName = fn + "_t" + "_recy-" + recycle
