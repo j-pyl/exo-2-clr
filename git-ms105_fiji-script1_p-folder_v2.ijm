@@ -1,6 +1,6 @@
 // MS105 Fiji Script 1
 // Modified for batch by JEP 07/2024
-// Replaced code with V2-2
+// Replaced code with V2-3
 
 /*
  * Macro template to process multiple images in a folder
@@ -50,12 +50,11 @@ function processFile(input, output, file) {
 //		close("\\Others");
 //	}
 
-
-
-
 	// Testing alternative code idea out
-	if (File.Exists(origfn + "-" + 1 + "_IntensityData.csv")) {
-		print(origfn + "-" + 1 + "_IntensityData.csv already exists. Image skipped.")
+	if (File.Exists(origfn + "-" + 1 + "_IntensityData.csv")) {		// Skips original/parent file if it has already been analysed
+		print(origfn + "-" + 1 + "_IntensityData.csv already exists. Image skipped.");
+		return ("1")
+	}
 	else{
 		for (i = 1; i < 3; i++) {
 			// Duplicate channel i
@@ -63,13 +62,17 @@ function processFile(input, output, file) {
 			fdup = origfn + "-" + i + ".nd2";
 			selectImage(fdup);
 		
-			// Run exo analysis script of MS105
-			if (i == 1) {
-				exo_analysis(input, output)
-			}
-			else {
-				exo_analysis2(input, output)
-			}
+			// Run exo analysis script of MS105 on duplicate i
+			exo_analysis(input, output, i)
+		
+		
+//			if (i == 1) {
+//				exo_analysis(input, output)
+//			}
+//			else {
+//				exo_analysis2(input, output)
+//			}
+
 		
 			// Close all images except original file
 			selectImage(origft);
@@ -82,37 +85,44 @@ function processFile(input, output, file) {
 	print("Saving to: " + output);
 }
 
-function exo_analysis(input, output) { 
+
+
+function exo_analysis(input, output, j) { // Maybe I need to replace 'j' here with another variable to prevent confusion?
 	//Modified from Macro of Steve 
 
 	//Clean the environment
-	roiManager("reset");
 	run("Clear Results");
+	if (j == 1) {
+		roiManager("reset") // Keeps ROIs for analysis in channel 2 (red)
+	}
 
 	// Get information of the file open
 	title = getTitle();
 	getDimensions(width, height, channels, slices, frames);
-//	dir = getDirectory("image");											//// Can comment this line out? It may run a problem if using a duplicated image
-
-	//Do zstack, select the cell and find maxima - add to ROI
-	run("Z Project...", "projection=[Max Intensity]");
-	run("Enhance Contrast", "saturated=0.35");
-
-	waitForUser("Draw around the cell", "Draw around the cell");
-	run("Set Measurements...", "area redirect=None decimal=3");
-	run("Measure");
-	Area = getResult("Area", 0);
-	run("Close" );
-	print("area="+Area);
-	run("Clear Results");
-	run("Clear Outside");
-	run("Select None");
-
-	run("Find Maxima..."); 
-	roiManager("Add");
-
+	//dir = getDirectory("image");		// Commented this line out. It may run a problem if using a duplicated image. It also has no use anymore.
 	imageName= File.getNameWithoutExtension(title);
-	roiManager("Save", output + "/" + imageName + ".roi");					////
+
+
+	if (j == 1) {		// Runs ROI detection on first channel (green). Does not create ROI list for channel 2 (red).
+		//Do zstack, select the cell and find maxima - add to ROI
+		run("Z Project...", "projection=[Max Intensity]");
+		run("Enhance Contrast", "saturated=0.35");
+
+		waitForUser("Draw around the cell", "Draw around the cell");
+		run("Set Measurements...", "area redirect=None decimal=3");
+		run("Measure");
+		Area = getResult("Area", 0);
+		run("Close" );
+		print("area="+Area);
+		run("Clear Results");
+		run("Clear Outside");
+		run("Select None");
+
+		run("Find Maxima..."); 
+		roiManager("Add");
+		
+		roiManager("Save", output + "/" + imageName + ".roi");					////
+	}
 	
 	//Work on original image
 	selectImage(title);
@@ -183,8 +193,4 @@ function exo_analysis(input, output) {
 	print (f, scaleunit);
 	print (f, pixelScale);
 	File.close(f);
-}
-
-function exo_analysis2(input, output) {
-	
 }
