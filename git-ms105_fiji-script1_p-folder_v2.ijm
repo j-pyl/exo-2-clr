@@ -1,6 +1,6 @@
 // MS105 Fiji Script 1
 // Modified for batch by JEP 07/2024
-// Replaced code with V2-3
+// Replaced code with V2-4
 
 /*
  * Macro template to process multiple images in a folder
@@ -36,20 +36,7 @@ function processFile(input, output, file) {
 	origfn = File.getNameWithoutExtension(file); // possibly need to delete this line?
 	origft = getTitle(file);
 	
-//	for (i = 1; i < 3; i++) {
-//		// Duplicate channel i
-//		run("Duplicate...", "duplicate channels=" + i);
-//		fdup = origfn + "-" + i + ".nd2";
-//		selectImage(fdup);
-//		
-//		// Run exo analysis script of MS105
-//		exo_analysis(input, output)
-//		
-//		// Close all images except original file
-//		selectImage(origftitle);
-//		close("\\Others");
-//	}
-
+	
 	// Testing alternative code idea out
 	if (File.Exists(origfn + "-" + 1 + "_IntensityData.csv")) {		// Skips original/parent file if it has already been analysed
 		print(origfn + "-" + 1 + "_IntensityData.csv already exists. Image skipped.");
@@ -59,20 +46,12 @@ function processFile(input, output, file) {
 		for (i = 1; i < 3; i++) {
 			// Duplicate channel i
 			run("Duplicate...", "duplicate channels=" + i);
+//			run("Duplicate...", "title=temp duplicate channels=" + ________);
 			fdup = origfn + "-" + i + ".nd2";
 			selectImage(fdup);
 		
 			// Run exo analysis script of MS105 on duplicate i
 			exo_analysis(input, output, i)
-		
-		
-//			if (i == 1) {
-//				exo_analysis(input, output)
-//			}
-//			else {
-//				exo_analysis2(input, output)
-//			}
-
 		
 			// Close all images except original file
 			selectImage(origft);
@@ -87,7 +66,7 @@ function processFile(input, output, file) {
 
 
 
-function exo_analysis(input, output, j) { // Maybe I need to replace 'j' here with another variable to prevent confusion?
+function exo_analysis(input, output, j) { // Maybe I need to replace 'j' here with another variable to prevent confusion? -> replace with ii
 	//Modified from Macro of Steve 
 
 	//Clean the environment
