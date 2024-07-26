@@ -1,13 +1,14 @@
 // MS105 Fiji Script 1
 // Modified for batch by JEP 07/2024
-// Replaced code with ms105_fiji-script1_p-folder_v2-6-section.ijm
+// Code newer than ms105_fiji-script1_p-folder_v2-6-section.ijm
 
 function processFile(input, output, file) {
 	// Leave the print statements until things work, then remove them.
 	print("Processing: " + input + File.separator + file);
 	origfn = File.getNameWithoutExtension(file);
 	
-	if (File.Exists(output + File.separator + origfn + "-" + 1 + "_IntensityData.csv")) {		// Skips original/parent file if it has already been analysed
+	// Skip original/parent file if it has already been analysed
+	if (File.Exists(output + File.separator + origfn + "-" + 1 + "_IntensityData.csv")) {
 		print(origfn + "-" + 1 + "_IntensityData.csv already exists. Image skipped.");
 		return ("1");		
 	}
@@ -23,27 +24,46 @@ function processFile(input, output, file) {
 	
 	for (i = 0; i < 2; i++) {
 		recycle = i
-		if (recycle == 0) {							//// is this the right place to do this? I might need to change this. This maybe isn't even the right way to do it.
-			run("Duplicate...", "title=template duplicate channels=1");				//// can I do this? template = run(... ?
+		if (recycle == 0) {
+			// Make named duplicates
+			run("Duplicate...", "title=template duplicate channels=1");
 			run("Duplicate...", "title=subject duplicate channels=2");
+			
+			// Detect puncta on template
+			template_spot_detection(output, origfn, recycle);
+			
+			exo_analysis_general(output, "template", origfn, recycle);
+			exo_analysis_general(output, "subject", origfn, recycle);
+			
 		} else if (recycle == 1) {
+			// Make named duplicates
 			run("Duplicate...", "title=template duplicate channels=2");
 			run("Duplicate...", "title=subject duplicate channels=1");
+
+			// Detect puncta on template
+			template_spot_detection(output, origfn, recycle);
+			
+			exo_analysis_general(output, "template", origfn, recycle);
+			exo_analysis_general(output, "subject", origfn, recycle);
+			// I know this code is doubled and not 'pretty'/conventional, but this is the way I can integrate recycle number into the sequence
+			
 		} else {
 			print("Too many recycles! Recycles >= 1");
 			return("1");
 		}
 		
-		// Code & functions here.
-		template_spot_detection(output, template, origfn, recycle);
 		
-		exo_analysis_general(output, template, origfn, recycle);			//// Steve comment: no need for 'template' or 'subject' as they aren't variables to use
-		exo_analysis_general(output, subject, origfn, recycle);			//// JP: need to figure out a way to run twice with template and then subject
+		
+//		// Code & functions here.
+//		template_spot_detection(output, template, origfn, recycle);			//// recycle doesn't work here!
+//		
+//		exo_analysis_general(output, template, origfn, recycle);			//// Steve comment: no need for 'template' or 'subject' as they aren't variables to use
+//		exo_analysis_general(output, subject, origfn, recycle);			//// JP: need to figure out a way to run twice with template and then subject
 //		//// Maybe run like this?
 //		exo_analysis_general(output, "template", origfn, recycle);
 //		exo_analysis_general(output, "subject", origfn, recycle);
 
-		selectImage(orig);
+		selectImage(orig);		//// this is wrong
 		close("\\Others");
 
 	}
@@ -80,7 +100,7 @@ function cellROI(output, fn) {
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------
-function template_spot_detection (output, template, fn, recycle) {
+function template_spot_detection (output, fn, recycle) {
 	selectImage("template");				//// don't need variable template just above. image = string 'template'
 	roiManager("reset");
 	
@@ -107,18 +127,17 @@ function template_spot_detection (output, template, fn, recycle) {
 
 //------------------------------------------------------------------------------------------------------------------------------------
 function exo_analysis_general (output, base, fn, recycle) { //// base = base file name (input template or subject when calling this function).
-	selectImage(base);										//// base = deprecated
+	selectImage(base);										
 	getDimensions(width, height, channels, slices, frames);
 	if (base == "template") {
-		imageName = fn + "_t" + "_recy-" + recycle
+		imageName = fn + "_recy-" + recycle + "_t"
 	}
 	else if (base == "subject") {							//// this bit might be wrong. i.e. Assigning these values to imageName
-		imageName = fn + "_s" + "_recy-" + recycle
+		imageName = fn + "_recy-" + recycle + "_s"
 	}
 	
 	
-	
-	selectImage(______);
+	selectImage(base);
 	roiManager("Select", 0);
 
 	// get array of x and y coords
@@ -194,8 +213,6 @@ function exo_analysis_general (output, base, fn, recycle) { //// base = base fil
 
 
 
-// Add Stack.getDimensions(width, height, channels, slices, frames); into exoanalysis function
-// imageName needs to be revised/adapted
 	
 	
 	
