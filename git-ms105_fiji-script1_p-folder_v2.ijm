@@ -52,17 +52,6 @@ function processFile(input, output, file) {
 			return("1");
 		}
 		
-		
-		
-//		// Code & functions here.
-//		template_spot_detection(output, template, origfn, recycle);			//// recycle doesn't work here!
-//		
-//		exo_analysis_general(output, template, origfn, recycle);			//// Steve comment: no need for 'template' or 'subject' as they aren't variables to use
-//		exo_analysis_general(output, subject, origfn, recycle);			//// JP: need to figure out a way to run twice with template and then subject
-//		//// Maybe run like this?
-//		exo_analysis_general(output, "template", origfn, recycle);
-//		exo_analysis_general(output, "subject", origfn, recycle);
-
 
 		selectImage(origft);	////If I delete origft above, replace with selectImage(file);. origfn WILL NOT work.
 		close("\\Others");
@@ -213,60 +202,3 @@ function exo_analysis_general (output, base, fn, recycle) { //// base = base fil
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------
-
-
-
-
-
-	
-	
-	
-	
-// if recycle == 0
-// template = name-1
-// subject = name-2
-// if recycle == 1
-// template = name-2
-// subject = name-1
-
-
-
-
-
-
-// In function processFile:
-//		recycle = 0
-//		if (recycle == 0) {							//// is this the right place to do this? I might need to change this. This maybe isn't even the right way to do it.
-//			template = run("Duplicate...", "duplicate channels=1");				//// can I do this? template = run(... ?
-//			subject = run("Duplicate...", "duplicate channels=2");
-//		}
-//		else if (recycle == 1) {
-//			template = run("Duplicate...", "duplicate channels=2");
-//			subject = run("Duplicate...", "duplicate channels=1");
-//		}
-//		else {
-//			print("Too many recycles! Recycles >= 1");
-//		}
-
-
-//function cellROIold(output, fn) {
-//	//Do zstack, select the cell and find maxima - add to ROI --------------------------------
-//	run("Z Project...", "projection=[Max Intensity]");
-//	run("Enhance Contrast", "saturated=0.35");
-//
-//	waitForUser("Draw around the cell", "Draw around the cell");
-//	run("Set Measurements...", "area redirect=None decimal=3");
-//	run("Measure");
-//	Area = getResult("Area", 0);
-//	run("Close" );
-//	print("area="+Area);
-//	run("Clear Results");
-//	run("Clear Outside");
-//	run("Select None");
-//
-//	run("Find Maxima..."); 
-//	roiManager("Add");
-//		
-//	roiManager("Save", output + "/" + fn + "_cell.roi");					//// NOTE: imageName is not defined here
-//	//----------------------------------------------------------------------------------------
-//}
