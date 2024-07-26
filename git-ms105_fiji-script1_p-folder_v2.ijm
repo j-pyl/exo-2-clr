@@ -63,11 +63,12 @@ function processFile(input, output, file) {
 //		exo_analysis_general(output, "template", origfn, recycle);
 //		exo_analysis_general(output, "subject", origfn, recycle);
 
-		selectImage(orig);		//// this is wrong
+
+		selectImage(origft);	////If I delete origft above, replace with selectImage(file);. origfn WILL NOT work.
 		close("\\Others");
 
 	}
-	run("Close All");															//// Is this in the right place?
+	run("Close All");		//// I think this is in the right place.
 }
 
 
@@ -75,6 +76,7 @@ function processFile(input, output, file) {
 
 
 //------------------------------------------------------------------------------------------------------------------------------------
+// THIS FUNCTION WORKS. DO NOT MODIFY FOR THE MOMENT.
 // Save ROI of shape drawn around cell. This most probably can get shortened a decent bit.
 function cellROI(output, fn) {
 	selectImage("template");
@@ -100,6 +102,7 @@ function cellROI(output, fn) {
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------
+// THIS FUNCTION WORKS. DO NOT MODIFY FOR THE MOMENT.
 function template_spot_detection (output, fn, recycle) {
 	selectImage("template");				//// don't need variable template just above. image = string 'template'
 	roiManager("reset");
@@ -126,13 +129,13 @@ function template_spot_detection (output, fn, recycle) {
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------
+// This function runs without error. No need to change
 function exo_analysis_general (output, base, fn, recycle) { //// base = base file name (input template or subject when calling this function).
 	selectImage(base);										
 	getDimensions(width, height, channels, slices, frames);
 	if (base == "template") {
 		imageName = fn + "_recy-" + recycle + "_t"
-	}
-	else if (base == "subject") {							//// this bit might be wrong. i.e. Assigning these values to imageName
+	} else if (base == "subject") {							//// this bit might be wrong. i.e. Assigning these values to imageName
 		imageName = fn + "_recy-" + recycle + "_s"
 	}
 	
@@ -204,7 +207,9 @@ function exo_analysis_general (output, base, fn, recycle) { //// base = base fil
 	print (f, scaleunit);
 	print (f, pixelScale);
 	File.close(f);
-	
+	// when running this section alone, a log window is open at the end. Maybe add the two following lines?
+//	selectWindow("Log");
+//	run("Close");
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------
