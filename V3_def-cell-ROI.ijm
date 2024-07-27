@@ -9,13 +9,23 @@ function processFile(input, output, file) {
 	print("Processing: " + input + File.separator + file);
 	origfn = File.getNameWithoutExtension(file);
 
+	// Skip original/parent file if it has already been analysed
+	if (File.Exists(output + File.separator + origfn + "-" + 1 + "_IntensityData.csv")) {
+		print(origfn + "-" + 1 + "_IntensityData.csv already exists. Image skipped.");
+		return;		
+	}
+
+
 	open(input+File.separator+file);
-	origft = getTitle(file);							//// is this redundant with origfn?
 	run("Clear Results");
 	roiManager("reset");
 
+	run("Duplicate...", "title=template duplicate channels=1");
+
 	// Draw ROI around cell and save it	
 	cellROI(output, origfn);		// output file name = origfn + "_cell.roi
+
+	run("Close All");
 }
 
 
