@@ -8,6 +8,7 @@
 // maybe do line 9 instead of line 10?
 // #@ String (label = "File suffix", value = "_cell.roi") suffix
 // #@ String (label = "File suffix", value = ".tif") suffix
+// No, this does not work! Need file to be opened & be the original file.
 
 
 function processFile(input, output, file) {
@@ -62,3 +63,117 @@ function processFile(input, output, file) {
 	}
 	run("Close All");		//// I think this is in the right place.
 }
+
+
+
+//------------------------------------------------------------------------------------------------------------------------------------
+// THIS FUNCTION WORKS. DO NOT MODIFY FOR THE MOMENT.
+function template_spot_detection (output, fn, recycle) {
+	selectImage("template");				//// don't need variable template just above. image = string 'template'
+	roiManager("reset");
+	
+	run("Z Project...", "projection=[Max Intensity]");
+	run("Enhance Contrast", "saturated=0.35");
+
+	// Load cell outline ROI
+	roiManager("open", output + "/" + fn + "_cell.roi");
+	roiManager("select", 0);
+	
+	// Clear all but selection
+	run("Clear Results");
+	run("Clear Outside");
+	run("Select None");
+	roiManager("reset");	// Remove cell outline ROI				//// from speaking with Steve: added this line ////
+	
+	// Find puncta and save results
+	run("Find Maxima..."); 		//// Need to define prominence!
+	roiManager("Add");
+	roiManager("Save", output + "/" + fn + "_recy-" + recycle + ".roi");					////
+	
+	run("Close");				//// Hopefully this closes the new window (Z projection window)
+}
+
+//------------------------------------------------------------------------------------------------------------------------------------
+// This function runs without error. No need to change
+function exo_analysis_general (output, base, fn, recycle) { //// base = base file name (input template or subject when calling this function).
+	selectImage(base);										
+	getDimensions(width, height, channels, slices, frames);
+	if (base == "template") {
+		imageName = fn + "_recy-" + recycle + "_t"
+	} else if (base == "subject") {							//// this bit might be wrong. i.e. Assigning these values to imageName
+		imageName = fn + "_recy-" + recycle + "_s"
+	}
+	
+	
+	selectImage(base);
+	roiManager("Select", 0);
+
+	// get array of x and y coords
+	getSelectionCoordinates(xCoords, yCoords);
+
+	run("Select None");
+	f = File.open(output + "/" + imageName+ "_IntensityData.csv");			////		////Need to update imageName
+	str = "";
+	for (i = 0; i < xCoords.length; i++) {
+		str = str + "spot_" + i + ",";
+	}
+	str = str + "frame\n";
+	print(f, str);
+
+
+	for (i = 0; i < frames; i++) {
+		Stack.setFrame(i+1);
+		str = "";
+		for (j = 0; j < xCoords.length; j++) {
+			makeOval(xCoords[j] - 2, yCoords[j] - 2, 4, 4);
+			getStatistics(area, mean, min, max, std, histogram);
+			str = str + mean + ",";
+		}
+		str = str + i + "\n";
+		print(f, str);
+	}
+	File.close(f);
+
+	//Get coordinates of all points 
+	f = File.open(output + "/" + imageName+ "_CoordData.csv");				////		////Need to update imageName
+	str = "";
+	x = ""; 
+	y= "";
+	for (i = 0; i < xCoords.length; i++) {
+		str = str + "spot_" + i + ",";
+		x = x + xCoords[i]+ ","; 
+		y = y + yCoords[i] + ",";
+	}
+	str = str + "\n";
+	x = x + "\n";
+	y = y + "\n";
+	print(f, str);
+	print(f, x);
+	print(f, y);
+	File.close(f);
+
+	//Get informations 
+	getPixelSize(unit, pixelWidth, pixelHeight);
+	print("SCALE" + unit + "," +pixelWidth+ "," +pixelHeight);
+	frameInterval=Stack.getFrameInterval();
+	frameInterval = "interval (in s)"+","+ frameInterval + "\n" ; 
+	Totspot = xCoords.length; 
+	Totspot = "Totspot" +","+ Totspot+ "\n" ; 
+	Area = "area (in unit)" +","+ Area+ "\n";
+	scaleunit =  "ScaleUnit" +","+ unit + "\n";
+	pixelScale =  "pixelScale" +","+ pixelWidth + "\n";
+	head = "Info, Value\n";
+	
+	f = File.open(output + "/" + imageName+ "_CellInfo.csv");				////		////Need to update imageName
+	print (f, head);
+	print(f, Area); 
+	print(f, frameInterval); 
+	print(f, Totspot); 
+	print (f, scaleunit);
+	print (f, pixelScale);
+	File.close(f);
+	// when running this section alone, a log window is open at the end. Maybe add the two following lines?
+//	selectWindow("Log");
+//	run("Close");
+}
+//------------------------------------------------------------------------------------------------------------------------------------
