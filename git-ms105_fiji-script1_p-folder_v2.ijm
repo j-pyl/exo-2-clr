@@ -10,7 +10,7 @@ function processFile(input, output, file) {
 	// Skip original/parent file if it has already been analysed
 	if (File.Exists(output + File.separator + origfn + "-" + 1 + "_IntensityData.csv")) {
 		print(origfn + "-" + 1 + "_IntensityData.csv already exists. Image skipped.");
-		return ("1");		
+		return;		
 	}
 
 	open(input+File.separator+file);
@@ -49,7 +49,7 @@ function processFile(input, output, file) {
 			
 		} else {
 			print("Too many recycles! Recycles >= 1");
-			return("1");
+			return;
 		}
 		
 
@@ -110,7 +110,7 @@ function template_spot_detection (output, fn, recycle) {
 	roiManager("reset");	// Remove cell outline ROI				//// from speaking with Steve: added this line ////
 	
 	// Find puncta and save results
-	run("Find Maxima..."); 
+	run("Find Maxima..."); 		//// Need to define prominence!
 	roiManager("Add");
 	roiManager("Save", output + "/" + fn + "_recy-" + recycle + ".roi");					////
 	
