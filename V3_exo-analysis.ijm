@@ -4,13 +4,12 @@
 // V3 - analyse for exocytic events
 // Code currently copied over from V2-8_cleaned
 
-// For V4, add this:
-//#@ Boolean (label = "2-channel analysis", value = true) twoclr
 
 // Using process folder FIJI template
 #@ File (label = "Input directory", style = "directory") input
 #@ File (label = "Output directory", style = "directory") output
 #@ String (label = "File suffix", value = ".tif") suffix
+//#@ Boolean (label = "2-channel analysis", value = true) twoclr //// Add this in V4
 
 //setBatchMode(true);
 processFolder(input);
@@ -36,9 +35,11 @@ function processFile(input, output, file) {
 	
 	//// Skip if file exists because it will be run in def-cell-ROI and this will depend on its results?
 	if (File.exists(output + "/" + origfn + "_cell.roi") == false) {
+		print(output + "/" + origfn + "_cell.roi does not exist. Unable to run analysis on this image.");
 		return;
 	}
-	if (File.exists(output + "/" + origfn + "_IntensityData.csv") == false) {
+	if (File.exists(output + "/" + origfn + "_IntensityData.csv") == true) {
+		print(output + "/" + origfn + "_IntensityData.csv already exists. Skipping analysis of this image.");
 		return;
 	}
 	
