@@ -10,6 +10,9 @@
 // #@ String (label = "File suffix", value = ".tif") suffix
 // No, this does not work! Need file to be opened & be the original file.
 
+// For V4, add this:
+//#@ Boolean (label = "2-channel analysis", value = true) twoclr
+
 
 function processFile(input, output, file) {
 	// Leave the print statements until things work, then remove them.
@@ -17,6 +20,12 @@ function processFile(input, output, file) {
 	origfn = File.getNameWithoutExtension(file);
 	
 	//// Skip if file exists because it will be run in def-cell-ROI and this will depend on its results?
+	if (File.exists(output + "/" + origfn + "_cell.roi") == false) {
+		return;
+	}
+	if (File.exists(output + "/" + origfn + "_IntensityData.csv") == false) {
+		return;
+	}
 	
 	open(input+File.separator+file);
 	origft = getTitle(file);							//// is this redundant with origfn?
@@ -24,11 +33,9 @@ function processFile(input, output, file) {
 	roiManager("reset");
 
 
-	//// Below has been copy-pasted from V2-8_cleaned. Need to quickly check all is correct.
-
 	for (i = 0; i < 2; i++) {
 		recycle = i
-		if (recycle == 0) {
+		if (recycle == 0) { // Detect ROIs on channel 1, analyse these in channel 1&2
 			// Make named duplicates
 			run("Duplicate...", "title=template duplicate channels=1");
 			run("Duplicate...", "title=subject duplicate channels=2");
@@ -39,12 +46,11 @@ function processFile(input, output, file) {
 			exo_analysis_general(output, "template", origfn, recycle);
 			exo_analysis_general(output, "subject", origfn, recycle);
 			
-		} else if (recycle == 1) {
-			// Make named duplicates
+		} else if (recycle == 1) { // Detect ROIs on channel 2, analyse these in channel 1&2
+			selectImage(origft); // is redundant with below (code at end of for loop), but performed as backup.
 			run("Duplicate...", "title=template duplicate channels=2");
 			run("Duplicate...", "title=subject duplicate channels=1");
 
-			// Detect puncta on template
 			template_spot_detection(output, origfn, recycle);
 			
 			exo_analysis_general(output, "template", origfn, recycle);
@@ -56,12 +62,11 @@ function processFile(input, output, file) {
 			return;
 		}
 		
-
+		// Close all images except original: set up for next recycle.
 		selectImage(origft);	////If I delete origft above, replace with selectImage(file);. origfn WILL NOT work.
 		close("\\Others");
-
 	}
-	run("Close All");		//// I think this is in the right place.
+	run("Close All");
 }
 
 
@@ -69,7 +74,7 @@ function processFile(input, output, file) {
 //------------------------------------------------------------------------------------------------------------------------------------
 // THIS FUNCTION WORKS. DO NOT MODIFY FOR THE MOMENT.
 function template_spot_detection (output, fn, recycle) {
-	selectImage("template");				//// don't need variable template just above. image = string 'template'
+	selectImage("template");
 	roiManager("reset");
 	
 	run("Z Project...", "projection=[Max Intensity]");
@@ -83,14 +88,17 @@ function template_spot_detection (output, fn, recycle) {
 	run("Clear Results");
 	run("Clear Outside");
 	run("Select None");
-	roiManager("reset");	// Remove cell outline ROI				//// from speaking with Steve: added this line ////
+	roiManager("reset");	// Remove cell outline ROI
 	
 	// Find puncta and save results
 	run("Find Maxima..."); 		//// Need to define prominence!
 	roiManager("Add");
 	roiManager("Save", output + "/" + fn + "_recy-" + recycle + ".roi");					////
 	
-	run("Close");				//// Hopefully this closes the new window (Z projection window)
+	run("Close"); 	//// First run closes ROI manager?
+	run("Close");	//// Second run closes MAX_* image?
+//	Replace two lines above with single line below? Don't especially need to close ROI manager.
+//	close("MAX_template");
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------
@@ -112,7 +120,7 @@ function exo_analysis_general (output, base, fn, recycle) { //// base = base fil
 	getSelectionCoordinates(xCoords, yCoords);
 
 	run("Select None");
-	f = File.open(output + "/" + imageName+ "_IntensityData.csv");			////		////Need to update imageName
+	f = File.open(output + "/" + imageName+ "_IntensityData.csv");			////		////Need to update imageName?
 	str = "";
 	for (i = 0; i < xCoords.length; i++) {
 		str = str + "spot_" + i + ",";
@@ -135,7 +143,7 @@ function exo_analysis_general (output, base, fn, recycle) { //// base = base fil
 	File.close(f);
 
 	//Get coordinates of all points 
-	f = File.open(output + "/" + imageName+ "_CoordData.csv");				////		////Need to update imageName
+	f = File.open(output + "/" + imageName+ "_CoordData.csv");				////		////Need to update imageName?
 	str = "";
 	x = ""; 
 	y= "";
@@ -164,7 +172,7 @@ function exo_analysis_general (output, base, fn, recycle) { //// base = base fil
 	pixelScale =  "pixelScale" +","+ pixelWidth + "\n";
 	head = "Info, Value\n";
 	
-	f = File.open(output + "/" + imageName+ "_CellInfo.csv");				////		////Need to update imageName
+	f = File.open(output + "/" + imageName+ "_CellInfo.csv");				////		////Need to update imageName?
 	print (f, head);
 	print(f, Area); 
 	print(f, frameInterval); 
