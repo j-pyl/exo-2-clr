@@ -38,23 +38,24 @@ function processFile(input, output, file) {
 		print(output + "/" + origfn + "_cell.roi does not exist. Unable to run analysis on this image.");
 		return;
 	}
-	if (File.exists(output + "/" + origfn + "_IntensityData.csv") == true) {
-		print(output + "/" + origfn + "_IntensityData.csv already exists. Skipping analysis of this image.");
+	if (File.exists(output + "/" + origfn + "_recy-0_s_IntensityData.csv") == true) {
+		print(output + "/" + origfn + "_rcy-0_s_IntensityData.csv already exists. Skipping analysis of this image.");
 		return;
 	}
 	
 	open(input+File.separator+file);
-	origft = getTitle(file);
+	origft = getTitle();
 	run("Clear Results");
 	roiManager("reset");
 
 
 	for (i = 0; i < 2; i++) {
-		recycle = i
+		recycle = i;
 		selectImage(origft);
 		if (recycle == 0) { // Detect ROIs on channel 1, analyse these in channel 1&2
 			// Make named duplicates
 			run("Duplicate...", "title=template duplicate channels=1");
+			selectImage(origft);
 			run("Duplicate...", "title=subject duplicate channels=2");
 			
 			// Detect puncta on template
@@ -65,6 +66,7 @@ function processFile(input, output, file) {
 			
 		} else if (recycle == 1) { // Detect ROIs on channel 2, analyse these in channel 1&2
 			run("Duplicate...", "title=template duplicate channels=2");
+			selectImage(origft);
 			run("Duplicate...", "title=subject duplicate channels=1");
 
 			template_spot_detection(output, origfn, recycle);
@@ -121,9 +123,9 @@ function exo_analysis_general (output, base, fn, recycle) { //// base = base fil
 	selectImage(base);										
 	getDimensions(width, height, channels, slices, frames);
 	if (base == "template") {
-		imageName = fn + "_recy-" + recycle + "_t"
+		imageName = fn + "_recy-" + recycle + "_t";
 	} else if (base == "subject") {							//// this bit might be wrong. i.e. Assigning these values to imageName
-		imageName = fn + "_recy-" + recycle + "_s"
+		imageName = fn + "_recy-" + recycle + "_s";
 	}
 	
 	

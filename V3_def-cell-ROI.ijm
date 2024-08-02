@@ -29,7 +29,7 @@ function processFile(input, output, file) {
 	origfn = File.getNameWithoutExtension(file);
 
 	// Skip original/parent file if it has already been analysed
-	if (File.Exists(output + File.separator + origfn + "-" + 1 + "_cell.roi")) {
+	if (File.exists(output + File.separator + origfn + "-" + 1 + "_cell.roi")) {
 		print(origfn + "-" + 1 + "_IntensityData.csv already exists. Image skipped.");
 		return;		
 	}
