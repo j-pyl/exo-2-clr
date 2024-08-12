@@ -8,8 +8,12 @@
 // Using process folder FIJI template
 #@ File (label = "Input directory", style = "directory") input
 #@ File (label = "Output directory", style = "directory") output
-#@ String (label = "File suffix", value = ".tif") suffix
+#@ String (label = "File suffix", value = ".nd2") suffix
 //#@ Boolean (label = "2-channel analysis", value = true) twoclr //// Add this in V4
+
+// NEED TO ADD IMAGE REGISTRATION FOR SLIDES.
+// Maybe with global variable?
+// #@ Boolean (label = "Register images", value = false) regi
 
 //setBatchMode(true);
 processFolder(input);

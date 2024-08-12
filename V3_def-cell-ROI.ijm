@@ -7,7 +7,7 @@
 // Using process folder FIJI template
 #@ File (label = "Input directory", style = "directory") input
 #@ File (label = "Output directory", style = "directory") output
-#@ String (label = "File suffix", value = ".tif") suffix
+#@ String (label = "File suffix", value = ".nd2") suffix
 
 processFolder(input);
 
@@ -29,8 +29,8 @@ function processFile(input, output, file) {
 	origfn = File.getNameWithoutExtension(file);
 
 	// Skip original/parent file if it has already been analysed
-	if (File.exists(output + File.separator + origfn + "-" + 1 + "_cell.roi")) {
-		print(origfn + "-" + 1 + "_IntensityData.csv already exists. Image skipped.");
+	if (File.exists(output + File.separator + origfn + "_cell.roi")) {
+		print(origfn + "_cell already exists. Image skipped.");
 		return;		
 	}
 
