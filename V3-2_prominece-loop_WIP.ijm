@@ -1,7 +1,7 @@
 
 
-roiManager("measure");	//// Need to perform these two lines a decent bit before? Before the clear outside and the run("select none")
-cellArea = getResult("Area", 0); //// Also need to make sure results table is empty for line above
+//roiManager("measure");	//// Need to perform these two lines a decent bit before? Before the clear outside and the run("select none")
+//cellArea = getResult("Area", 0); //// Also need to make sure results table is empty for line above
 
 promi = 12;
 
@@ -19,4 +19,6 @@ do {
 	promi = promi + 1;
 } while ((nResults/cellArea) > VALUE_WE_DECIDE);
 
-//// Then save this ROI now?
+roiManager("Save", output + "/" + fn + "_recy-" + recycle + ".roi");					////
+	
+close("MAX_template");

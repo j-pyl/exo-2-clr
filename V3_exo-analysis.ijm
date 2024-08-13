@@ -105,6 +105,8 @@ function template_spot_detection (output, fn, recycle) {
 	// Load cell outline ROI
 	roiManager("open", output + "/" + fn + "_cell.roi");
 	roiManager("select", 0);
+	roiManager("measure");				//// Need to make sure results table is empty before running?
+	cellArea = getResult("Area", 0);	//// Or maybe run [cellArea = getResult("Area", nResult - 1]? That code works, but if num ROI > 1, measure will done on all ROIs in manager, and only the last result will be assigned to variable
 	
 	// Clear all but selection
 	run("Clear Results");
@@ -113,11 +115,28 @@ function template_spot_detection (output, fn, recycle) {
 	// Remove cell outline ROI
 	roiManager("reset");
 	
-	// Find puncta and save results
-	run("Find Maxima..."); 				//// Need to define prominence!
-	roiManager("Add");
-	roiManager("Save", output + "/" + fn + "_recy-" + recycle + ".roi");					////
+//	// Find puncta and save results
+//	run("Find Maxima...");
+//	roiManager("Add");
+//	roiManager("Save", output + "/" + fn + "_recy-" + recycle + ".roi");					////
 	
+	// Set appropriate maxima number and save results
+	promi = 12;
+	do { 
+		// Clear ROI manager and results table
+		run("Clear Results");
+		run("Select None");			//// Need to sort out kinks with lines above as they might be more or less redundant now
+		roiManager("reset");
+		
+		// Perform spot detection and count maxima
+		run("Find Maxima...", "prominence=" + promi);
+		roiManager("Add");
+		roiManager("select", 0);
+		roiManager("measure");
+		promi = promi + 1;
+	} while ((nResults/cellArea) > VALUE_WE_DECIDE);	
+	
+	roiManager("Save", output + "/" + fn + "_recy-" + recycle + ".roi");					////
 	close("MAX_template");
 }
 
