@@ -10,6 +10,7 @@
 #@ String (label = "File suffix", value = ".nd2") suffix
 
 processFolder(input);
+showMessage("Process Folder", "Process folder complete.\nWhole folder processed.");
 
 // function to scan folders/subfolders/files to find files with correct suffix
 function processFolder(input) {

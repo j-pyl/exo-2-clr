@@ -18,6 +18,7 @@
 //setBatchMode(true);
 processFolder(input);
 //setBatchMode(false);
+showMessage("Process Folder", "Process folder complete.\nWhole folder processed.");
 
 // function to scan folders/subfolders/files to find files with correct suffix
 function processFolder(input) {
@@ -98,34 +99,26 @@ function processFile(input, output, file) {
 function template_spot_detection (output, fn, recycle) {
 	selectImage("template");
 	roiManager("reset");
+	run("Clear Results");
 	
 	run("Z Project...", "projection=[Max Intensity]");
 	run("Enhance Contrast", "saturated=0.35");
 
-	// Load cell outline ROI
+	// Load cell outline ROI & get area
 	roiManager("open", output + "/" + fn + "_cell.roi");
 	roiManager("select", 0);
-	roiManager("measure");				//// Need to make sure results table is empty before running?
-	cellArea = getResult("Area", 0);	//// Or maybe run [cellArea = getResult("Area", nResult - 1]? That code works, but if num ROI > 1, measure will done on all ROIs in manager, and only the last result will be assigned to variable
+	roiManager("measure");
+	cellArea = getResult("Area", 0);
 	
-	// Clear all but selection
-	run("Clear Results");
+	// Clear everything outside of ROI (pixel value = 0)
 	run("Clear Outside");
-	run("Select None");
-	// Remove cell outline ROI
-	roiManager("reset");
-	
-//	// Find puncta and save results
-//	run("Find Maxima...");
-//	roiManager("Add");
-//	roiManager("Save", output + "/" + fn + "_recy-" + recycle + ".roi");					////
 	
 	// Set appropriate maxima number and save results
 	promi = 12;
 	do { 
 		// Clear ROI manager and results table
 		run("Clear Results");
-		run("Select None");			//// Need to sort out kinks with lines above as they might be more or less redundant now
+		run("Select None");
 		roiManager("reset");
 		
 		// Perform spot detection and count maxima
@@ -133,8 +126,11 @@ function template_spot_detection (output, fn, recycle) {
 		roiManager("Add");
 		roiManager("select", 0);
 		roiManager("measure");
-		promi = promi + 1;
-	} while ((nResults/cellArea) > VALUE_WE_DECIDE);	
+		promi += 1;
+	} while (((nResults/cellArea) > VALUE_WE_DECIDE) || (promi > 35)); //// Can do this way, or by starting with a high prominence going down
+	showMessage("Maxima Result", fn + "\nRecycle = " + recycle + "\n\nProminence > " + (promi - 1)); //// Remove line when done
+	
+	run("Clear Results");
 	
 	roiManager("Save", output + "/" + fn + "_recy-" + recycle + ".roi");					////
 	close("MAX_template");
