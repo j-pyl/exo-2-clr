@@ -9,7 +9,7 @@
 #@ File (label = "Input directory", style = "directory") input
 #@ File (label = "Output directory", style = "directory") output
 #@ String (label = "File suffix", value = ".nd2") suffix
-//#@ Boolean (label = "2-channel analysis", value = true) twoclr //// Add this in V4
+#@ Boolean (label = "2-channel analysis", value = true) twoclr //// Add this in V4
 
 // NEED TO ADD IMAGE REGISTRATION FOR SLIDES.
 // Maybe with global variable?
@@ -54,6 +54,23 @@ function processFile(input, output, file) {
 	roiManager("reset");
 
 
+
+	// SINGLE CHANNEL ANALYSIS
+	if (twoclr == false) {
+		selectImage(origft)
+		recycle = 0;				//// This is necessary to keep with the current code, without adding tons more lines
+		run("Duplicate...", "title=template duplicate channels=1"); //// Does this work even when only one channel is available?
+		
+		// Detect puncta on template
+		template_spot_detection(output, origfn, recycle);
+		// Analyse puncta detected
+		exo_analysis_general(output, "template", origfn, recycle);
+		
+		run("Close All");
+		return							//// Does this return out of the 'if' loop or out of 'processFile'?
+	}
+
+	// TWO CHANNEL ANALYSIS
 	for (i = 0; i < 2; i++) {
 		recycle = i;
 		selectImage(origft);
@@ -128,7 +145,7 @@ function template_spot_detection (output, fn, recycle) {
 		roiManager("measure");
 		promi += 1;
 	} while (((nResults/cellArea) > VALUE_WE_DECIDE) || (promi > 35)); //// Can do this way, or by starting with a high prominence going down
-	showMessage("Maxima Result", fn + "\nRecycle = " + recycle + "\n\nProminence > " + (promi - 1)); //// Remove line when done
+	showMessage("Maxima Result", fn + "\nRecycle = " + recycle + "\n\nProminence > " + (promi - 1)); //// Remove line when done (when finalising/completing code)
 	
 	run("Clear Results");
 	
