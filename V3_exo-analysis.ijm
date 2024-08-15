@@ -53,6 +53,15 @@ function processFile(input, output, file) {
 	run("Clear Results");
 	roiManager("reset");
 
+	// Register image
+	if (regi == true) { //// Need to uncomment this bit in global variable area
+		if (File.exists(input + "/0-tetraspeck-regi.tif")) {
+			print("Cannot perform registration:\n" + input + "/0-tetraspeck-regi.tif\ndoes not exist")
+		}
+		run("Register Channels - Apply", "open=" + input + "/0-tetraspeck-regi.tif");
+		//// Need to check if this is correct/what is made is usable etc
+		//// Also see what the output is, if there is a new image generated...
+	}
 
 
 	// SINGLE CHANNEL ANALYSIS
