@@ -1,8 +1,8 @@
 // Adaptation of ms105 FIJI script 1
-// JEP 07/2024
+// JEP 08/2024
 
 // V3 - analyse for exocytic events
-// Code currently copied over from V2-8_cleaned
+// Current version: V3-7-2
 
 
 // Using process folder FIJI template
@@ -53,25 +53,25 @@ function processFile(input, output, file) {
 	run("Clear Results");
 	roiManager("reset");
 
-	// Register image
-	if (regi == true) { //// Need to uncomment this bit in global variable area
-		if (File.exists(input + "/0-tetraspeck-regi.tif")) {
-			print("Cannot perform registration:\n" + input + "/0-tetraspeck-regi.tif\ndoes not exist")
-		}
-		run("Register Channels - Apply", "open=" + input + "/0-tetraspeck-regi.tif");
-		regi-img = getTitle();
-		//// Need to check if this is correct/what is made is usable etc
-		//// Also see what the output is, if there is a new image generated...
-		//run("Register Channels - Apply", "open=/Users/JP/Downloads/0-tetraspeck-regi.tif");
-		selectImage(origft);
-		close();
-		selectImage(regi-img);
-		rename(origft);
-		
-		// Convert back to 16-bit (this is what needs to be done when applying correction to unregistered tetraspeck image). Is this the correct way for time stack?
-		setOption("ScaleConversions", true);
-		run("16-bit");
-	}
+//	// Register image
+//	if (regi == true) { //// Need to uncomment this bit in global variable area
+//		if (File.exists(input + "/0-tetraspeck-regi.tif")) {
+//			print("Cannot perform registration:\n" + input + "/0-tetraspeck-regi.tif\ndoes not exist")
+//		}
+//		// Run Registration
+//		run("Register Channels - Apply", "open=" + input + "/0-tetraspeck-regi.tif"); //// This seems to work? I ran above on my computer and it began to do so normally?
+//		////Had some warnings/errors about using hyperstack(?) but then was running registration? I aborted the operation because it was taking very long on my computer.
+//		// Reorganise images & titles
+//		regi-img = getTitle();
+//		selectImage(origft);
+//		close();
+//		selectImage(regi-img);
+//		rename(origft);
+//		
+//		// Convert back to 16-bit (this is what needs to be done when applying correction to unregistered tetraspeck image). Is this the correct way for time stack?
+//		setOption("ScaleConversions", true);
+//		run("16-bit");
+//	}
 
 
 	// SINGLE CHANNEL ANALYSIS
