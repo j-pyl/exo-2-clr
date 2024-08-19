@@ -59,8 +59,18 @@ function processFile(input, output, file) {
 			print("Cannot perform registration:\n" + input + "/0-tetraspeck-regi.tif\ndoes not exist")
 		}
 		run("Register Channels - Apply", "open=" + input + "/0-tetraspeck-regi.tif");
+		regi-img = getTitle();
 		//// Need to check if this is correct/what is made is usable etc
 		//// Also see what the output is, if there is a new image generated...
+		//run("Register Channels - Apply", "open=/Users/JP/Downloads/0-tetraspeck-regi.tif");
+		selectImage(origft);
+		close();
+		selectImage(regi-img);
+		rename(origft);
+		
+		// Convert back to 16-bit (this is what needs to be done when applying correction to unregistered tetraspeck image). Is this the correct way for time stack?
+		setOption("ScaleConversions", true);
+		run("16-bit");
 	}
 
 
