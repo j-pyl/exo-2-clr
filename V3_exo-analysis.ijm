@@ -2,7 +2,7 @@
 // JEP 08/2024
 
 // V3 - analyse for exocytic events
-// Current version: V3-7-2
+// Current version: V3-8-2
 
 
 // Using process folder FIJI template
@@ -74,7 +74,7 @@ function processFile(input, output, file) {
 //	}
 
 
-	// SINGLE CHANNEL ANALYSIS		//// Need to define Area in exo_analysis_general. Need to define VALUE_WE_DECIDE in template_spot_detection
+	// SINGLE CHANNEL ANALYSIS
 	if (twoclr == false) {
 		selectImage(origft)
 		recycle = 0;				//// This is necessary to keep with the current code, without adding tons more lines
@@ -144,7 +144,7 @@ function template_spot_detection (output, fn, recycle) {
 	roiManager("open", output + "/" + fn + "_cell.roi");
 	roiManager("select", 0);
 	roiManager("measure");
-	cellArea = getResult("Area", 0);			//// use global variable? var cellArea = getResult("Area",0);s
+	cellArea = getResult("Area", 0);
 
 	// Clear everything outside of ROI (pixel value = 0)
 	run("Clear Outside");
@@ -239,7 +239,7 @@ function exo_analysis_general (output, base, fn, recycle, cell_area) { //// base
 	frameInterval = "interval (in s)"+","+ frameInterval + "\n" ; 
 	Totspot = xCoords.length; 
 	Totspot = "Totspot" +","+ Totspot+ "\n" ; 
-	Area = "area (in unit)" +","+ cell_area+ "\n";		//// AREA IS NOT DEFINED. Need to update the code: use cellArea?
+	Area = "area (in unit)" +","+ cell_area+ "\n";
 	scaleunit =  "ScaleUnit" +","+ unit + "\n";
 	pixelScale =  "pixelScale" +","+ pixelWidth + "\n";
 	head = "Info, Value\n";
