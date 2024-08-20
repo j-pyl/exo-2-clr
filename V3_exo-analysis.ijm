@@ -74,16 +74,16 @@ function processFile(input, output, file) {
 //	}
 
 
-	// SINGLE CHANNEL ANALYSIS
+	// SINGLE CHANNEL ANALYSIS		//// Need to define Area in exo_analysis_general. Need to define VALUE_WE_DECIDE in template_spot_detection
 	if (twoclr == false) {
 		selectImage(origft)
 		recycle = 0;				//// This is necessary to keep with the current code, without adding tons more lines
 		run("Duplicate...", "title=template duplicate channels=1"); //// Does this work even when only one channel is available?
 		
 		// Detect puncta on template
-		template_spot_detection(output, origfn, recycle);
+		cArea = template_spot_detection(output, origfn, recycle);
 		// Analyse puncta detected
-		exo_analysis_general(output, "template", origfn, recycle);
+		exo_analysis_general(output, "template", origfn, recycle, cArea);
 		
 		run("Close All");
 		return							//// Does this return out of the 'if' loop or out of 'processFile'?
@@ -100,20 +100,20 @@ function processFile(input, output, file) {
 			run("Duplicate...", "title=subject duplicate channels=2");
 			
 			// Detect puncta on template
-			template_spot_detection(output, origfn, recycle);
+			cArea = template_spot_detection(output, origfn, recycle);
 			
-			exo_analysis_general(output, "template", origfn, recycle);
-			exo_analysis_general(output, "subject", origfn, recycle);
+			exo_analysis_general(output, "template", origfn, recycle, cArea);
+			exo_analysis_general(output, "subject", origfn, recycle, cArea);
 			
 		} else if (recycle == 1) { // Detect ROIs on channel 2, analyse these in channel 1&2
 			run("Duplicate...", "title=template duplicate channels=2");
 			selectImage(origft);
 			run("Duplicate...", "title=subject duplicate channels=1");
 
-			template_spot_detection(output, origfn, recycle);
+			cArea = template_spot_detection(output, origfn, recycle);
 			
-			exo_analysis_general(output, "template", origfn, recycle);
-			exo_analysis_general(output, "subject", origfn, recycle);
+			exo_analysis_general(output, "template", origfn, recycle, cArea);
+			exo_analysis_general(output, "subject", origfn, recycle, cArea);
 			// I know this code is doubled and not 'pretty'/conventional, but this is the way I can integrate recycle number into the sequence
 			
 		} else {
@@ -144,8 +144,8 @@ function template_spot_detection (output, fn, recycle) {
 	roiManager("open", output + "/" + fn + "_cell.roi");
 	roiManager("select", 0);
 	roiManager("measure");
-	cellArea = getResult("Area", 0);
-	
+	cellArea = getResult("Area", 0);			//// use global variable? var cellArea = getResult("Area",0);s
+
 	// Clear everything outside of ROI (pixel value = 0)
 	run("Clear Outside");
 	
@@ -163,18 +163,19 @@ function template_spot_detection (output, fn, recycle) {
 		roiManager("select", 0);
 		roiManager("measure");
 		promi += 1;
-	} while (((nResults/cellArea) > VALUE_WE_DECIDE) || (promi > 35)); //// Can do this way, or by starting with a high prominence going down
-	showMessage("Maxima Result", fn + "\nRecycle = " + recycle + "\n\nProminence > " + (promi - 1)); //// Remove line when done (when finalising/completing code)
+	} while (((nResults/cellArea) > 0.55) || (promi > 35)); //// Value approximately calculated from JEP042 IRAP-pHl dish1_001, with ROI drawn around cell, measure area, and then find maxima with promi >14-15 //// Can do this way, or by starting with a high prominence going down
+	showMessage("Maxima Result", fn + "\nRecycle = " + recycle + "\n\nProminence > " + (promi - 1) + "\nMaxima detected: " + nResults); //// Remove line when done (when finalising/completing code)
 	
 	run("Clear Results");
 	
 	roiManager("Save", output + "/" + fn + "_recy-" + recycle + ".roi");					////
 	close("MAX_template");
+	return cellArea;
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------
 // This function runs without error. No need to change
-function exo_analysis_general (output, base, fn, recycle) { //// base = base file name (input template or subject when calling this function).
+function exo_analysis_general (output, base, fn, recycle, cell_area) { //// base = base file name (input template or subject when calling this function).
 	selectImage(base);										
 	getDimensions(width, height, channels, slices, frames);
 	if (base == "template") {
@@ -238,7 +239,7 @@ function exo_analysis_general (output, base, fn, recycle) { //// base = base fil
 	frameInterval = "interval (in s)"+","+ frameInterval + "\n" ; 
 	Totspot = xCoords.length; 
 	Totspot = "Totspot" +","+ Totspot+ "\n" ; 
-	Area = "area (in unit)" +","+ Area+ "\n";
+	Area = "area (in unit)" +","+ cell_area+ "\n";		//// AREA IS NOT DEFINED. Need to update the code: use cellArea?
 	scaleunit =  "ScaleUnit" +","+ unit + "\n";
 	pixelScale =  "pixelScale" +","+ pixelWidth + "\n";
 	head = "Info, Value\n";
