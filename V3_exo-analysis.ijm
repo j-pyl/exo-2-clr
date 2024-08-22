@@ -2,7 +2,7 @@
 // JEP 08/2024
 
 // V3 - analyse for exocytic events
-// Current version: V3-8-2
+// Current version: V3-10
 
 
 // Using process folder FIJI template
@@ -163,7 +163,7 @@ function template_spot_detection (output, fn, recycle) {
 		roiManager("select", 0);
 		roiManager("measure");
 		promi += 1;
-	} while (((nResults/cellArea) > 0.55) || (promi > 35)); //// Value approximately calculated from JEP042 IRAP-pHl dish1_001, with ROI drawn around cell, measure area, and then find maxima with promi >14-15 //// Can do this way, or by starting with a high prominence going down
+	} while (((nResults/cellArea) > 0.55) && (promi < 35)); //// Value approximately calculated from JEP042 IRAP-pHl dish1_001, with ROI drawn around cell, measure area, and then find maxima with promi >14-15 //// Can do this way, or by starting with a high prominence going down
 	showMessage("Maxima Result", fn + "\nRecycle = " + recycle + "\n\nProminence > " + (promi - 1) + "\nMaxima detected: " + nResults); //// Remove line when done (when finalising/completing code)
 	
 	run("Clear Results");
