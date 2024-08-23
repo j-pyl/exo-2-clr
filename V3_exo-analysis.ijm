@@ -2,7 +2,7 @@
 // JEP 08/2024
 
 // V3 - analyse for exocytic events
-// Current version: V3-10
+// Current version: V3-11
 
 
 // Using process folder FIJI template
@@ -15,9 +15,9 @@
 // Maybe with global variable?
 // #@ Boolean (label = "Register images", value = false) regi
 
-//setBatchMode(true);
+setBatchMode(true);
 processFolder(input);
-//setBatchMode(false);
+setBatchMode(false);
 showMessage("Process Folder", "Process folder complete.\nWhole folder processed.");
 
 // function to scan folders/subfolders/files to find files with correct suffix
@@ -58,7 +58,7 @@ function processFile(input, output, file) {
 //		if (File.exists(input + "/0-tetraspeck-regi.tif")) {
 //			print("Cannot perform registration:\n" + input + "/0-tetraspeck-regi.tif\ndoes not exist")
 //		}
-//		// Run Registration
+//		// Run Registration – need NanoJ-core plugin?
 //		run("Register Channels - Apply", "open=" + input + "/0-tetraspeck-regi.tif"); //// This seems to work? I ran above on my computer and it began to do so normally?
 //		////Had some warnings/errors about using hyperstack(?) but then was running registration? I aborted the operation because it was taking very long on my computer.
 //		// Reorganise images & titles
@@ -72,6 +72,20 @@ function processFile(input, output, file) {
 //		setOption("ScaleConversions", true);
 //		run("16-bit");
 //	}
+
+	// Create summary log file
+	f = File.open(output + "/" + origfn + "_exo-log.txt");	
+	print(f, "EXO-ANALYSIS VERSION 3-11\n"
+	print(f, origfn + "\n");
+	print(f, "Output path = " + output "\n");
+	//if (regi == true) {
+	//	print(f, "Registered = Yes\n");
+	//} else {
+	//	print(f, "Registered = No\n");
+	//}
+	print(f, "Channels analysed: " + (twoclr + 1) + "\n\n");
+	File.close(f);
+
 
 
 	// SINGLE CHANNEL ANALYSIS
@@ -164,7 +178,8 @@ function template_spot_detection (output, fn, recycle) {
 		roiManager("measure");
 		promi += 1;
 	} while (((nResults/cellArea) > 0.55) && (promi < 35)); //// Value approximately calculated from JEP042 IRAP-pHl dish1_001, with ROI drawn around cell, measure area, and then find maxima with promi >14-15 //// Can do this way, or by starting with a high prominence going down
-	showMessage("Maxima Result", fn + "\nRecycle = " + recycle + "\n\nProminence > " + (promi - 1) + "\nMaxima detected: " + nResults); //// Remove line when done (when finalising/completing code)
+	//showMessage("Maxima Result", fn + "\nRecycle = " + recycle + "\n\nProminence > " + (promi - 1) + "\nMaxima detected: " + nResults); //// Remove line when done (when finalising/completing code)
+	File.append("Recycle = " + recycle + "\nProminence > " + (promi - 1) + "\nMaxima detected: " + nResults + "\n\n", output + "/" + fn + "_exo-log.txt");
 	
 	run("Clear Results");
 	
