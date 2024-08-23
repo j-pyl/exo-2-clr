@@ -2,7 +2,7 @@
 // JEP 08/2024
 
 // V3 - analyse for exocytic events
-// Current version: V3-11
+// Current version: V3-11-2
 
 
 // Using process folder FIJI template
@@ -47,8 +47,9 @@ function processFile(input, output, file) {
 		print(output + "/" + origfn + "_rcy-0_s_IntensityData.csv already exists. Skipping analysis of this image.");
 		return;
 	}
-	
-	open(input+File.separator+file);
+
+	s = "open=["+input+File.separator+file+"] autoscale color_mode=Composite rois_import=[ROI manager] view=Hyperstack stack_order=XYCZT";
+	run("Bio-Formats Importer", s);
 	origft = getTitle();
 	run("Clear Results");
 	roiManager("reset");
@@ -75,9 +76,9 @@ function processFile(input, output, file) {
 
 	// Create summary log file
 	f = File.open(output + "/" + origfn + "_exo-log.txt");	
-	print(f, "EXO-ANALYSIS VERSION 3-11\n"
+	print(f, "EXO-ANALYSIS VERSION 3-11-2\n");
 	print(f, origfn + "\n");
-	print(f, "Output path = " + output "\n");
+	print(f, "Output path = " + output + "\n");
 	//if (regi == true) {
 	//	print(f, "Registered = Yes\n");
 	//} else {
