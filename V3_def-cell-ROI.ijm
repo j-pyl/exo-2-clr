@@ -2,7 +2,7 @@
 // JEP 07/2024
 
 // V3 - define ROI around cell
-// Code currently copied over from V2-8_cleaned
+// Current version: V3-11-3
 
 // Using process folder FIJI template
 #@ File (label = "Input directory", style = "directory") input
@@ -36,7 +36,8 @@ function processFile(input, output, file) {
 	}
 
 	// Open file and set up workspace
-	open(input+File.separator+file);
+	s = "open=["+input+File.separator+file+"] autoscale color_mode=Composite rois_import=[ROI manager] view=Hyperstack stack_order=XYCZT";
+	run("Bio-Formats Importer", s);
 	run("Clear Results");
 	roiManager("reset");
 
@@ -58,5 +59,5 @@ function cellROI(output, fn) {
 	// Draw around the cell and save that ROI
 	waitForUser("Draw around the cell", "Draw around the cell");
 	roiManager("add");
-	roiManager("Save", output + "/" + fn + "_cell.roi");
+	roiManager("Save", output+File.separator+fn+"_cell.roi");
 }
