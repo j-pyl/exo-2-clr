@@ -2,7 +2,7 @@
 // JEP 07/2024
 
 // V3 - define ROI around cell
-// Current version: V3-11-3
+// Current version: V3-11-4
 
 // Using process folder FIJI template
 #@ File (label = "Input directory", style = "directory") input
@@ -57,7 +57,8 @@ function cellROI(output, fn) {
 	run("Enhance Contrast", "saturated=0.35");
 
 	// Draw around the cell and save that ROI
-	waitForUser("Draw around the cell", "Draw around the cell");
+	setTool("freehand");
+	waitForUser("cellROI", "Draw around the cell");
 	roiManager("add");
 	roiManager("Save", output+File.separator+fn+"_cell.roi");
 }
