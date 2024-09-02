@@ -11,13 +11,13 @@ source("Script/exo_functions.R")
 # Variables ----
 
 # Parameters for peakfinding
-minpeakheight <- 40
-threshold <- 35
+minpeakheight <- 20
+threshold <- 10
 threshold2 <- 0.8
 
 # Load data ----
 # Make a list of all conditions and files
-datalist <- LISTCOND(dirCond = "Data")
+datalist <- LISTCOND(dirCond = "Data") # Currently need two sub-directories in Data/ ?
 datalistIntensity <- LISTCOND(dirCond = "Data", pattern = "*IntensityData.csv")
 datalistInfo <- LISTCOND(dirCond = "Data", pattern = "*CellInfo.csv")
 
@@ -115,8 +115,8 @@ for ( i in 1: length(datalistIntensity)) { #loopthrough conditions
 }
 
 # Save important df ----
-write.csv(AllNormdataCentered, paste("Output/Data/", "AllNormdataCentered_jean.csv"), row.names = FALSE)
-write.csv(AveragedScaledData, paste("Output/Data/", "AveragedScaledData_jean.csv"), row.names = FALSE)
+write.csv(AllNormdataCentered, paste("Output/Data/", "AllNormdataCentered.csv"), row.names = FALSE)
+write.csv(AveragedScaledData, paste("Output/Data/", "AveragedScaledData.csv"), row.names = FALSE)
 
 
 # Plotting ----
@@ -129,8 +129,8 @@ exopoint <- AllNormdataCentered %>%
 forStatTest <- AllNormdataCentered %>% 
   filter(NewFrame == 0) %>% 
   select(Condname,norm)
-stat.test <- wilcox.test(forStatTest$norm[forStatTest$Condname == "no_FBS"],
-            forStatTest$norm[forStatTest$Condname == "with_FBS"],
+stat.test <- wilcox.test(forStatTest$norm[forStatTest$Condname == "recy-0_t"],  # Input condition name (Data/condi-1)
+            forStatTest$norm[forStatTest$Condname == "recy-1_t"],  # Input condition name (Data/condi-2)
             alternative = "two.sided")
 
 PeakSpotplot <- ggplot(forStatTest, aes(y = norm, x = Condname)) + 
@@ -141,7 +141,7 @@ PeakSpotplot <- ggplot(forStatTest, aes(y = norm, x = Condname)) +
                 width = 0.2) +   #errorbar
   geom_errorbar(data = exopoint, 
                 aes(y = mean, ymin = mean, ymax = mean), 
-                width = 0.4, size = 1 ) +   #mean line
+                width = 0.4, linewidth = 1 ) +   #mean line
   scale_y_continuous(limits = c(0,50), expand = c(0, 0)) +
   geom_text(aes(label = paste0("p = ",round(stat.test[["p.value"]],3)), x = Inf, y = Inf), size = 3, hjust = 1, vjust = 1, check_overlap = TRUE) +
   labs(y = "Peak amplitude (AU)", x ="") +
@@ -153,8 +153,8 @@ PeakSpotplot
 # resampling and averaging ----
 
 
-avgDF <- rbind(average_waves(df = AllNormdataCentered_withTime, s = "no_FBS"),
-               average_waves(df = AllNormdataCentered_withTime, s = "with_FBS"))
+avgDF <- rbind(average_waves(df = AllNormdataCentered_withTime, s = "recy-0_t"), # Input condition name (Data/condi-1)
+               average_waves(df = AllNormdataCentered_withTime, s = "recy-1_t")) # Input condition name (Data/condi-2)
 
 #Plot with all curves in grey- facet by condition 
 plotCenteredDataScaledVsTime <- ggplot() +

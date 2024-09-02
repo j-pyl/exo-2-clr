@@ -39,12 +39,12 @@ FINDPEAK <- function (Normdata, minpeakheight, threshold = 1, threshold2 = 0.65)
   NumNormData <<- lapply(select(NormdataWide, !contains("frame")), as.numeric)
   
   # Find peaks ----
-  allpeaksNorm <- data_frame()
+  allpeaksNorm <- tibble()
   
   for(i in 1 : length(NumNormData)) {
-    peakstemp1 <- findpeaks(NumNormData[[i]], nups = 1, ndowns = 1, minpeakdistance = 10, minpeakheight = minpeakheight,  threshold =  threshold)
+    peakstemp1 <- findpeaks(NumNormData[[i]], nups = 1, ndowns = 3, minpeakdistance = 10, minpeakheight = minpeakheight,  threshold =  threshold)
     #Do double check of findpeak with threshold half of the value found!
-    peakstemp <- findpeaks(NumNormData[[i]], nups = 1, ndowns = 1, minpeakdistance = 10, minpeakheight = minpeakheight,  threshold =peakstemp1[1]*threshold2 )
+    peakstemp <- findpeaks(NumNormData[[i]], nups = 1, ndowns = 3, minpeakdistance = 10, minpeakheight = minpeakheight,  threshold =peakstemp1[1]*threshold2 )
     if (!is.null(peakstemp)) {
       peakstemp <- cbind(names(NumNormData[i]), peakstemp)
     }
