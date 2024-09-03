@@ -2,7 +2,7 @@
 // JEP 08/2024
 
 // V3 - analyse for exocytic events
-// Current version: V3-11-2
+// Current version: V3-11-6 (or V3-13-1?)
 
 
 // Using process folder FIJI template
@@ -76,7 +76,11 @@ function processFile(input, output, file) {
 
 	// Create summary log file
 	f = File.open(output + "/" + origfn + "_exo-log.txt");	
-	print(f, "EXO-ANALYSIS VERSION 3-11-2\n");
+	print(f, "EXO-ANALYSIS VERSION 3-11-6\n");
+	getDateAndTime(yr, mo, dOfW, dOfMo, hr, minu, sec, msec);
+	currDate = ""+ yr +"."+ IJ.pad((mo+1),2) +"."+ IJ.pad(dOfMo,2);
+	currTime = IJ.pad(hr,2) +":"+ IJ.pad(minu,2) +":"+ IJ.pad(sec,2);
+	print(f, "Date & Time: "+currDate+" - "+currTime+"\n");
 	print(f, origfn + "\n");
 	print(f, "Output path = " + output + "\n");
 	//if (regi == true) {
