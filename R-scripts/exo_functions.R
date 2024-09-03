@@ -1,24 +1,112 @@
 # FUNCTIONS ----
 
-#' DATANORM - Reshape and normalise dataframe coming from imageJ macro "ExocytosisAnalysis"
+#' read_intensity_data - Reshape and normalised dataframes coming from imageJ macro "ExocytosisAnalysis"
 #' 
-#' @param data Data frame coming from imageJ macro. Should give intensity of spots overtime. Each columns is a spot.
-#' @return Reshaped and normalised dataframe.
+#' @param flist list of intensity csv files
+#' @param filt character string to filter the files to read
+#' @return reshaped and normalised dataframe.
 
-DATANORM <- function(data) {
-  # Reshape data
-  data<- data %>%
-    relocate(frame) #put the column fram as first column
+read_intensity_data <- function(flist, filt = "recy-0_t") {
+  df <- data.frame()
+  for (fname in flist) {
+    if(!grepl(filt, fname)) {
+      next
+    }
+    temp <- read.csv(fname)
+    temp <- temp %>% 
+      relocate(frame)
+    temp <- pivot_longer(data = temp, cols = contains("spot"))
+    temp <- temp %>%
+      group_by(name) %>%
+      mutate(norm = value - median(value))
+    temp$file <- basename(fname)
+    # extract the image name
+    temp$img <- gsub(paste0("_",filt,"_IntensityData.csv"), "", temp$file)
+    temp$kind <- filt
+    temp$UniqueIDspot <- paste0(temp$img, "_", temp$name)
+    
+    df <- rbind(df, temp)
+  }
+  return (df)
+}
+
+#' find_peaks_and_pair - Wrapper for FINDPEAK that also apirs the peaks from the subject data frame
+#'
+#' @param tdf template data frame
+#' @param sdf subject data frame
+#' @param idf info data frame
+#' @param minpeakheight A numeric value to determine the minimum value of the peak height. See pracma::findpeaks.
+#' @param threshold A numeric value to determine a threshold for peak detection.  See pracma::findpeaks.
+#' @param threshold2 A numeric value to determine a threshold for peak detection. The second time it is taking a pourcentage of the peak value.
+
+#' @return A dataframe with peaks for each spot. It has columns: spotname = V1, val = V2, index = V3, start = V4, end = V5.
+
+find_peaks_and_pair <-  function(tdf, sdf, idf, minpeakheight, threshold, threshold2) {
+  # find unique spots
+  unique_spot_list <- unique(tdf$UniqueIDspot)
   
-  dftoplot <- pivot_longer(data = data, cols = contains("spot"))
+  # loop through each spot and find peak
+  AllNormdataCentered <- data.frame()
+  for (i in 1:length(unique_spot_list)){
+    # filter one unique spot
+    spot <- unique_spot_list[i]
+    SubsetAllNormdata <- tdf %>% filter (UniqueIDspot == spot)
+    
+    # find Peak and center at zero around the peak
+    peaks <- FINDPEAK(Normdata = SubsetAllNormdata, minpeakheight = minpeakheight, threshold = threshold, threshold2 = threshold2)
+    if (length(peaks) > 0) {
+      max <- as.numeric(peaks$val[1])
+      index <- as.numeric(peaks$index[1]) 
+      newFrameZero <- SubsetAllNormdata$frame[index]
+      
+      # create new Frame column with Max centered to 0 and another with intensities scaled to 1
+      SubsetAllNormdata <- SubsetAllNormdata %>%
+        mutate(NewFrame = frame - newFrameZero, NewNorm = norm / max )
+      
+      # reconcatenate everything
+      AllNormdataCentered <- rbind(AllNormdataCentered, SubsetAllNormdata)
+    }
+  }
   
-  # Normalisation
-  Normdata <- dftoplot %>%
-    group_by(name) %>%
-    mutate(norm = value - median(value))
+  newdf <- merge(AllNormdataCentered, sdf, by = c("frame", "UniqueIDspot"), all.x = TRUE, sort = FALSE)
+  unique_spot_list <- unique(newdf$UniqueIDspot)
   
-  return (Normdata)
-} 
+  alldf <- data.frame()
+  for (i in 1:length(unique_spot_list)){
+    # filter one unique spot
+    spot <- unique_spot_list[i]
+    subsetdf <- newdf %>% filter (UniqueIDspot == spot)
+    # find the norm_0s value at frame 0
+    max <- subsetdf$norm.y[subsetdf$NewFrame == 0]
+    subsetdf <- subsetdf %>% mutate(NewNorm.y = norm.y / max)
+    alldf <- rbind(alldf, subsetdf)
+  }
+  
+  # create a new column from NewFrame with the time in seconds, we will get the calibration by
+  # looking up the value in infodf$`interval (in s)` for the corresponding file
+  # file is in the file column in infodf, whereas the file is in alldf$file_0t
+  alldf <- alldf %>% mutate(RelativeTime = NewFrame)
+  for (i in 1:nrow(alldf)){
+    file <- alldf$file.x[i]
+    file <- gsub("IntensityData", "CellInfo", file)
+    interval <- as.numeric(idf$`interval (in s)`[idf$file == file])
+    alldf$RelativeTime[i] <- alldf$NewFrame[i] * interval
+  }
+  # after merge rename any columns that are .x with 0t and .y with 0s or 1s and 1t
+  nm <- deparse(substitute(tdf))
+  
+  if (grepl("0t",nm)) {
+    colnames(alldf) <- gsub("\\.x", "_0t", colnames(alldf))
+    colnames(alldf) <- gsub("\\.y", "_0s", colnames(alldf))
+    colnames(newdf) <- gsub("NewNorm", "NewNorm_0t", colnames(newdf))
+  } else {
+    colnames(alldf) <- gsub("\\.x", "_1t", colnames(alldf))
+    colnames(alldf) <- gsub("\\.y", "_1s", colnames(alldf))
+    colnames(newdf) <- gsub("NewNorm", "NewNorm_1t", colnames(newdf))
+  }
+  
+  return(alldf)
+}
 
 #' FINDPEAK - Reshape and find peaks in dataframe coming from the function DATANORM.
 #'
@@ -57,128 +145,6 @@ FINDPEAK <- function (Normdata, minpeakheight, threshold = 1, threshold2 = 0.65)
   }
   
   return(allpeaksNorm)
-}
-
-#' TESTFEW - Take random spots and peaks to display. 
-#' 
-#' @param Normdata Data frame returned by DATANORM function. The df from DATANORM has a column: frame, name(spotsname), value(intensity), norm(intensity normalised).
-#' @param allpeaksNorm Data frame returned by FINDPEAK function. It has columns: spotname, val, index, start, end .
-#' @param setseed Boolean value: TRUE or FALSE. Allows to have always the same set of spots/peaks or not. For reproducibility.
-#' @param seed Numerical value for the seed if setseed is TRUE. 
-#' @param sample Numerical value for the size of the sample. 
-#' @param positiveOnly Boolean value: TRUE or FALSE. Determine if sample within spots with detected peaks or all spots. 
-#' 
-#' @return a plot. 
-
-TESTFEW <- function (Normdata, allpeaksNorm, setseed = TRUE, seed = 1, sample = 5, positiveOnly = TRUE) {
-  #Set seed or not ----
-  if(setseed == TRUE) {
-    set.seed(seed)
-  }
-  #Choose to display only data with peaks or not ----
-  if(positiveOnly == TRUE){
-    spotnameSelection <- unique(allpeaksNorm$spotname) %>%
-      sample(sample)
-  }
-  else {
-    spotnameSelection <- unique(Normdata$name) %>%
-      sample(sample)
-  }
-  
-  # Filter few ----
-  FewPeaksNorm <<- allpeaksNorm %>%
-    filter (spotname %in% spotnameSelection)
-  FewNorm <<- Normdata  %>%
-    filter (name %in% spotnameSelection)
-  
-  #Plot ----
-  pSelectionNorm <- ggplot() +
-    labs(title = "Baseline subtracted") +
-    geom_line(FewNorm, mapping = aes(x = frame, y = norm, colour = name)) +
-    geom_point(FewPeaksNorm, mapping = aes(x= as.numeric(index), y= as.numeric(val), colour=spotname))
-  
-  return (pSelectionNorm)
-}
-
-NBEXO <- function (info, allpeaksNorm) {
-  #C alculate the number of events per um2
-  area <- as.numeric(info[1,2])
-  time <- as.numeric(info[2,2])
-  Events <- length(allpeaksNorm$spotname) / area
-  
-  return(Events)
-}
-
-#' Function_NormPeakNbEvents - Big function that is using functions above: DATANORM, FINDPEAK and NBEXO
-#'
-#' @param data Data frame coming from imageJ macro "ExocytosisAnalysis". 
-#' Dataframe of intensity of spot overtime. Each columns is a spot.
-#' @param info Data frame coming from imageJ macro "ExocytosisAnalysis". 
-#' Dataframe with information of the file as area, timestep, unit, and scale.
-#' @return Nb of exocytic events per µm2/s  (or pixel2/s).
-
-Function_NormPeakNbEvents <- function (data, info, minpeakheight = minpeakheight, threshold = threshold ){ 
-  ## Reshape and normalise the data
-  Normdata <<- DATANORM(data = data)
-  
-  ## Findpeaks
-  Allpeaks <<- FINDPEAK (Normdata = Normdata, minpeakheight, threshold )
-  
-  ## Calculate nb of exocytic events per µm2/s  (or pixel2/s)
-  NbExoEvents =  NBEXO(info=info, allpeaksNorm = Allpeaks)
-  
-  return(NbExoEvents)
-}
-
-LISTCOND <- function (dirCond, pattern= "*.csv"){
-  #List all Conditions names
-  Condname <<- list.dirs(path=dirCond, recursive = FALSE, full.names = FALSE)
-  #List all Conditions path
-  CondListPath <<- list.dirs(path=dirCond, recursive = FALSE, full.names = TRUE)
-  
-  #List all files for each condition
-  listfiles <- list()
-  for (i in 1:length(CondListPath)){
-    FileList <-  list.files(path= CondListPath[i], pattern = pattern)
-    name <- paste0("Cond", i )
-    listfiles[[name]] <- FileList
-  }
-  
-  return(listfiles)
-}
-
-#' READDATA - Function to read all csv files from different conditions. It uses function: LISTCOND
-#'
-#' @param listcond List coming from function LISTCOND. List of names' files for each condition.
-#' @param list Boolean argument. If TRUE, returns a list of dataframes with all csv files. 
-#' If false, assigns to each csv file a dataframe in the global environment. 
-#' @param prefix To use if list=FALSE to add a prefix to the name of the df.
-
-
-READDATA <- function (listcond, list=FALSE, prefix = ""){
-  if( list == TRUE) {
-    
-    biglistofdf<- list()
-    for (i in 1 : length(listcond) ) {   #loop through each condition 
-      dircond <- CondListPath[i]
-      for (j in 1 : length(listcond[[i]])) { #loop through each file
-        dirfile <- listcond[[i]][j]
-        data_cond_test <- read_csv(paste(dircond, dirfile ,sep="/"),show_col_types = FALSE )
-        name <- paste0("Cond", i, "_file", j)
-        biglistofdf[[name]] <- data_cond_test
-      }
-    }
-    
-    return(biglistofdf)
-  } else {
-    for ( i in 1 : length(listcond) ) {   #loop through each condition 
-      dircond <- CondListPath[i]
-      for (j in 1 : length(listcond[[i]])) { #loop through each file
-        dirfile <- listcond[[i]][j]
-        assign(paste0(prefix,"Cond", i, "_file", j), read_csv(paste(dircond, dirfile ,sep="/"), show_col_types = FALSE ), envir = .GlobalEnv)
-      }
-    }
-  }
 }
 
 
@@ -226,4 +192,3 @@ average_waves <- function(df,s) {
                       Condname = s)
   return(avgDF)
 }
-

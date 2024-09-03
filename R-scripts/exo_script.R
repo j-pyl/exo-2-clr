@@ -7,7 +7,6 @@ library(ggbeeswarm)
 
 source("Script/exo_functions.R")
 
-
 # Variables ----
 
 # Parameters for peakfinding
@@ -16,226 +15,43 @@ threshold <- 10
 threshold2 <- 0.8
 
 # Load data ----
-# Make a list of all conditions and files
-datalist <- LISTCOND(dirCond = "Data") # Currently need two sub-directories in Data/ ?
-datalistIntensity <- LISTCOND(dirCond = "Data", pattern = "*IntensityData.csv")
-datalistInfo <- LISTCOND(dirCond = "Data", pattern = "*CellInfo.csv")
+# List all files in the Data folder
+datalistIntensity <- list.files("Data", pattern = "*IntensityData.csv", full.names = TRUE)
+datalistInfo <- list.files("Data", pattern = "*CellInfo.csv", full.names = TRUE)
 
-# Read csv files
-READDATA(datalistInfo, list = FALSE, prefix = "info")
-READDATA(datalistIntensity, list = FALSE, prefix = "intensity")
+# Read info csv files and compile
+infodf <- do.call(rbind,
+                  lapply(datalistInfo,
+                         function(x) {
+                           temp <- read.csv(x)
+                           cnames <- temp$Info
+                           temp <- as.data.frame(t(temp$Value))
+                           colnames(temp) <- cnames
+                           temp$file <- basename(x)
+                           temp}
+                  ))
 
-# Norm data and align peaks ----
-# Norm data 
-AllNormdata <- data.frame()
-for ( i in 1 : length(datalistIntensity)) { #loopthrough conditions
-  for ( j in 1 : length(datalistIntensity[[i]])){ #loopthrough files
-    datatemp <- get(paste0("intensityCond", i, "_file",j ))
-    Normdata <- DATANORM(datatemp)
-    Normdata <- cbind(ID = paste0("intensityCond", i, "_file",j ), Normdata)
-    Normdata <- cbind(Cond = paste0("Cond", i), Normdata)
-    Normdata <- cbind(Condname = Condname[i], Normdata)
-    
-    # Save each df individually
-    name <- paste0("norm_Cond", i, "_File", j)
-    assign(name, Normdata)
-    
-    # Concatenate everything together in one big df
-    AllNormdata <- rbind(AllNormdata, Normdata)
-  }
-}
+# read intensity csv files and compile
+intensity_0t_df <- read_intensity_data(datalistIntensity, "recy-0_t")
+intensity_0s_df <- read_intensity_data(datalistIntensity, "recy-0_s")
+intensity_1t_df <- read_intensity_data(datalistIntensity, "recy-1_t")
+intensity_1s_df <- read_intensity_data(datalistIntensity, "recy-1_s")
 
-# Retrieve name of files ----
-Filenumber <- tibble()
-n <- 0
-for ( i in 1 : length(datalistIntensity)) { #loopthrough conditions
-  for ( j in 1 : length(datalistIntensity[[i]])){ #loopthrough files
-    n <- n + 1
-    Filenumber[n,"ID"] <- paste0("Cond", i , "_file", j)
-    Filenumber[n,"filename"] <- datalistIntensity[[i]][j]
-  }
-}
+paired_0t_df <- find_peaks_and_pair(intensity_0t_df, intensity_0s_df, infodf, minpeakheight, threshold, threshold2)
+paired_1t_df <- find_peaks_and_pair(intensity_1t_df, intensity_1s_df, infodf, minpeakheight, threshold, threshold2)
 
-#Create unique name for each spot 
-AllNormdata <- AllNormdata %>% mutate(UniqueIDspot = paste(ID, name, sep = "-"))
-Unique_Spot <- unique(AllNormdata$UniqueIDspot)
-
-#Loop pour chaque spot and find peak
-AllNormdataCentered <- data.frame()
-for (i in 1:length(Unique_Spot)){
-  #Filter one unique spot
-  spot <- Unique_Spot[i]
-  SubsetAllNormdata <- AllNormdata %>% filter (UniqueIDspot == spot)
-
-  
-  #Find Peak and center at zero around the peak
-  peaks <- FINDPEAK(Normdata = SubsetAllNormdata, minpeakheight = minpeakheight, threshold = threshold, threshold2 = threshold2)
-  if (length(peaks) > 0) {
-    max <- as.numeric(peaks$val[1])
-    index <- as.numeric(peaks$index[1]) 
-    newFrameZero <- SubsetAllNormdata$frame[index]
-    
-    #Create new Frame column with Max centered to 0 and another with intensities scaled to 1
-    SubsetAllNormdata <- SubsetAllNormdata %>%
-      mutate(NewFrame = frame - newFrameZero, NewNorm = norm / max )
-    
-    #Reconcatenate everything
-    AllNormdataCentered <- rbind(AllNormdataCentered, SubsetAllNormdata)
-  }
-}
-
-# Add a column with time instead of Frame - take informations from infoCond file 
-AllNormdataCentered_withTime <- data.frame()
-for (i in 1 : length(datalistIntensity)) { #loopthrough conditions
-  for (j in 1 : length(datalistIntensity[[i]])){ #loopthrough files
-    filetemp <- paste0("intensityCond", i, "_file", j)
-    temp <- AllNormdataCentered %>% filter((grepl(filetemp, ID)))
-    infotemp <- get(paste0("infoCond", i, "_file", j))
-    temp <- temp %>% mutate( RelativeTime = NewFrame*as.numeric(infotemp[2,2]))
-    
-    AllNormdataCentered_withTime <- rbind(AllNormdataCentered_withTime,temp )
-  }
-}
-AllNormdataCentered <- AllNormdataCentered_withTime
-
-# Calculate the mean with sd on scaled curves
-AveragedScaledData <- data.frame()
-for ( i in 1: length(datalistIntensity)) { #loopthrough conditions
-  Condn <- paste0("Cond", i)
-  DataTemp <- AllNormdataCentered_withTime %>%
-    filter(grepl(Condn, Cond)) %>%
-    group_by(NewFrame) %>%
-    summarise(mean = mean(NewNorm),
-              median = median(NewNorm),
-              sd = sd(NewNorm),
-              sem= sd(NewNorm) / sqrt(length(NewNorm)))
-  DataTemp <- cbind(DataTemp, Cond = Condn)
-  DataTemp <- cbind(DataTemp, Condname = Condname[i])
-  AveragedScaledData <- rbind(AveragedScaledData,DataTemp)
-}
 
 # Save important df ----
-write.csv(AllNormdataCentered, paste("Output/Data/", "AllNormdataCentered.csv"), row.names = FALSE)
-write.csv(AveragedScaledData, paste("Output/Data/", "AveragedScaledData.csv"), row.names = FALSE)
+write.csv(paired_0t_df, "Output/Data/paired_0t.csv", row.names = FALSE)
+write.csv(paired_1t_df, "Output/Data/paired_1t.csv", row.names = FALSE)
 
 
 # Plotting ----
 
-exopoint <- AllNormdataCentered %>%
-  filter(NewFrame == 0) %>%
-  group_by(Condname) %>%
-  summarise(mean=mean(norm),
-            sd = sd(norm))
-forStatTest <- AllNormdataCentered %>% 
-  filter(NewFrame == 0) %>% 
-  select(Condname,norm)
-stat.test <- wilcox.test(forStatTest$norm[forStatTest$Condname == "recy-0_t"],  # Input condition name (Data/condi-1)
-            forStatTest$norm[forStatTest$Condname == "recy-1_t"],  # Input condition name (Data/condi-2)
-            alternative = "two.sided")
-
-PeakSpotplot <- ggplot(forStatTest, aes(y = norm, x = Condname)) + 
-  geom_quasirandom(aes(colour = Condname), size = 0.5, alpha = 0.75) +
-  scale_colour_manual(values = c("#3f3f3f","#ab6ded")) +
-  geom_errorbar(data = exopoint, 
-                aes(y = mean, ymin = mean - sd, ymax = mean + sd), 
-                width = 0.2) +   #errorbar
-  geom_errorbar(data = exopoint, 
-                aes(y = mean, ymin = mean, ymax = mean), 
-                width = 0.4, linewidth = 1 ) +   #mean line
-  scale_y_continuous(limits = c(0,50), expand = c(0, 0)) +
-  geom_text(aes(label = paste0("p = ",round(stat.test[["p.value"]],3)), x = Inf, y = Inf), size = 3, hjust = 1, vjust = 1, check_overlap = TRUE) +
-  labs(y = "Peak amplitude (AU)", x ="") +
-  theme_cowplot(9) +
-  theme(legend.position="none")
-
-PeakSpotplot
-
-# resampling and averaging ----
-
-
-avgDF <- rbind(average_waves(df = AllNormdataCentered_withTime, s = "recy-0_t"), # Input condition name (Data/condi-1)
-               average_waves(df = AllNormdataCentered_withTime, s = "recy-1_t")) # Input condition name (Data/condi-2)
-
-#Plot with all curves in grey- facet by condition 
-plotCenteredDataScaledVsTime <- ggplot() +
-  geom_path(data = AllNormdataCentered_withTime, aes(x = RelativeTime, y = NewNorm, colour = Condname), alpha = 0.5) +
-  scale_colour_manual(values = c("#3f3f3f","#ab6ded")) +
-  facet_wrap(. ~ Condname, ncol = 1) + 
-  scale_x_continuous(limits = c(-1.5, 2), expand = c(0, 0)) +
-  scale_y_continuous(limits = c(-0.5, 1.5), expand = c(0, 0)) +
-  ylab(label = "Normalized intensity") +
-  xlab(label = "Time (s)") +
-  theme_cowplot(9) +
-  theme(legend.position="none")
-plotCenteredDataScaledVsTime
-#Plot with all curves with average on top 
-plotCenteredDataScaled_withaverage_overlayVsTime <- plotCenteredDataScaledVsTime +
-  geom_line(data = avgDF, aes(x = t, y = avg, color = Condname), size = 1) +
-  geom_ribbon(data = avgDF , aes(x = t, ymin = avg - sd, ymax = avg + sd, fill = Condname), alpha =0.5) +
-  scale_fill_manual(values = c("#3f3f3f","#ab6ded"))
-
-plotAveragedScaledDataVsTime <- ggplot() +
-  geom_ribbon(data = avgDF , aes(x = t, ymin = avg - sd, ymax = avg + sd, fill = Condname), alpha =0.5) +
-  geom_line(data = avgDF, aes(x = t, y = avg, color = Condname), size = 1, alpha = 0.75) +
-  scale_x_continuous(limits = c(-1.5, 2), expand = c(0, 0)) +
-  scale_y_continuous(limits = c(-0.5, 1.5), expand = c(0, 0)) +
-  scale_colour_manual(values = c("#3f3f3f","#ab6ded")) +
-  scale_fill_manual(values = c("#3f3f3f","#ab6ded")) +
-  ylab(label = "Normalized intensity") +
-  xlab(label = "Time (s)") +
-  theme_cowplot(9) +
-  theme(legend.position="none")
-plotAveragedScaledDataVsTime
- 
-plotCenteredDataScaled_withaverage_overlayVsTime | plotAveragedScaledDataVsTime / PeakSpotplot
-
-#save last plot
-ggsave ("AlignedMeanPeaks_time.png", path = "Output/Plots", dpi = 300, width = 15, height = 15  , units = "cm" ,  bg = "white")
-
-# Plot with all curves facet by condition 
-plotCenteredDataVsTime <- ggplot() +
-  geom_path(data = AllNormdataCentered_withTime, aes(x = RelativeTime, y = norm, colour = Condname), alpha = 0.5) +
-  scale_colour_manual(values = c("#3f3f3f","#ab6ded")) +
-  facet_wrap (. ~ Condname, ncol = 1) + 
-  scale_x_continuous(limits = c(-1.5, 2), expand = c(0, 0)) +
-  ylab(label = "Intensity") +
-  xlab(label = "Time (s)") +
-  theme_cowplot(9) +
-  theme(legend.position="none")
-
-plotCenteredDataVsTime | PeakSpotplot / plotAveragedScaledDataVsTime
-
-#save last plot
-ggsave ("AlignedMeanPeaks_time2.png", path = "Output/Plots", dpi = 300, width = 15, height = 15  , units = "cm" ,  bg = "white")
-
-sparklines <- ggplot() +
+sparklines_0t <- ggplot() +
   geom_vline(xintercept = 0, colour = "#efefef") +
-  geom_path(data = AllNormdataCentered_withTime, aes(x = RelativeTime, y = norm, colour = Condname)) +
-  scale_colour_manual(values = c("#3f3f3f","#ab6ded")) +
-  facet_wrap(. ~ UniqueIDspot, nrow = 9) +
-  scale_x_continuous(limits = c(-1.5, 2), expand = c(0, 0)) +
-  ylab(label = "Intensity") +
-  xlab(label = "Time (s)") +
-  theme_cowplot(9) +
-  theme(legend.position="none",
-        strip.background = element_blank(),
-        strip.text.x = element_blank())
-sparklines
-sparklines | PeakSpotplot / plotAveragedScaledDataVsTime
-
-#save last plot
-ggsave ("AlignedMeanPeaks_time3.png", path = "Output/Plots", dpi = 300, width = 15, height = 15  , units = "cm" ,  bg = "white")
-ggsave ("AlignedMeanPeaks_time3.pdf", path = "Output/Plots", width = 15, height = 15  , units = "cm", bg = NULL)
-
-# save individual plots for figure
-ggsave("peakSpotPlot.pdf", PeakSpotplot, path = "Output/Plots", width = 3.5, height = 4, units = "cm", bg = NULL)
-ggsave("plotAveragedScaledDataVsTime.pdf", plotAveragedScaledDataVsTime, path = "Output/Plots", width = 3.5, height = 4, units = "cm", bg = NULL)
-ggsave("plotAveragedScaledDataVsTime_legend.pdf", plotAveragedScaledDataVsTime + theme(legend.position = "left"), path = "Output/Plots", width = 7, height = 4, units = "cm", bg = NULL)
-
-sparklines2 <- ggplot() +
-  geom_vline(xintercept = 0, colour = "#efefef") +
-  geom_path(data = AllNormdataCentered_withTime, aes(x = RelativeTime, y = norm, colour = Condname), size = 0.25) +
-  scale_colour_manual(values = c("#3f3f3f","#ab6ded")) +
+  geom_path(data = paired_0t_df, aes(x = RelativeTime, y = norm_0t), colour = "#00a651", size = 0.25) +
+  geom_path(data = paired_0t_df, aes(x = RelativeTime, y = norm_0s), colour = "#da70d6", size = 0.25) +
   facet_wrap(. ~ UniqueIDspot, ncol = 10) +
   scale_x_continuous(limits = c(-1.5, 2), expand = c(0, 0)) +
   ylab(label = "Intensity") +
@@ -245,6 +61,19 @@ sparklines2 <- ggplot() +
         strip.background = element_blank(),
         strip.text.x = element_blank())
 
-sparklines2
-ggsave("sparklines.pdf", sparklines2, path = "Output/Plots", width = 78, height = 100, units = "cm", bg = NULL)
+ggsave("sparklines_0t.png", sparklines_0t, path = "Output/Plots", width = 100, height = 100, units = "mm", dpi = 300, bg = "white")
 
+sparklines_1t <- ggplot() +
+  geom_vline(xintercept = 0, colour = "#efefef") +
+  geom_path(data = paired_1t_df, aes(x = RelativeTime, y = norm_1t), colour = "#da70d6", size = 0.25) +
+  geom_path(data = paired_1t_df, aes(x = RelativeTime, y = norm_1s), colour = "#00a651", size = 0.25) +
+  facet_wrap(. ~ UniqueIDspot, ncol = 10) +
+  scale_x_continuous(limits = c(-1.5, 2), expand = c(0, 0)) +
+  ylab(label = "Intensity") +
+  xlab(label = "Time (s)") +
+  theme_cowplot(4) +
+  theme(legend.position="none",
+        strip.background = element_blank(),
+        strip.text.x = element_blank())
+
+ggsave("sparklines_1t.png", sparklines_1t, path = "Output/Plots", width = 100, height = 100, units = "mm", dpi = 300, bg = "white")
