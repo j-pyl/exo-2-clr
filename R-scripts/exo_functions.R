@@ -192,3 +192,35 @@ average_waves <- function(df,s) {
                       Condname = s)
   return(avgDF)
 }
+
+
+#' extract_peak_xyt - Get the XY and time coordinates of a detected peak
+#' 
+#' @param indf Input dataframe. What will be used to find filename and extract peak coordinates.
+#' @param frecy File recycle. Input '0t' or '1t'. String to specify whether the current data is from recy-0 or recy-1.
+#' 
+#' @return Create .csv files for each dish with xy and frame coordinates of each peak detected in with findpeaks
+
+extract_peak_xyt <- function(indf,frecy) {
+  img <- paste0("img_",frecy)
+  knd <- paste0("kind_",frecy)
+  nm <- paste0("name_",frecy)
+  
+  # Make new df with necessary data
+  allpeaks_df <- indf %>% 
+    filter(NewFrame == 0) %>% 
+    select(img,knd,'frame',nm) %>%
+    rename(spot_no = nm) # will this work? copilot chat suggested the below
+    # rename(spot_no = !!sym(nm))
+  allpeaks_df$condname <- paste0(allpeaks_df[[img]],"_",allpeaks_df[[knd]])
+  # Save all peaks into df
+  write.csv(allpeaks_df, "Output/Data/peak-xyt/all-peaks-xyt.csv", row.names = FALSE)
+  
+  # Save new file with detected spot for each dish
+  uniqueCond <- unique(allpeaks_df$condname)
+  for (obj in uniqueCond) { # could simplify with group_by()?
+    temp <- allpeaks_df %>% 
+      filter(condname == obj)
+    write.csv(temp, paste0("Output/Data/peak-xyt/",obj,"_peak-xyt.csv"), row.names = FALSE)
+  }
+}

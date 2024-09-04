@@ -46,6 +46,11 @@ write.csv(paired_0t_df, "Output/Data/paired_0t.csv", row.names = FALSE)
 write.csv(paired_1t_df, "Output/Data/paired_1t.csv", row.names = FALSE)
 
 
+# Save peak xyt coordinates
+extract_peak_xyt(paired_0t_df,'0t')
+extract_peak_xyt(paired_1t_df,'1t')
+
+
 # Plotting ----
 
 sparklines_0t <- ggplot() +
