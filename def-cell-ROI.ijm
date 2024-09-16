@@ -1,8 +1,8 @@
 // Adaptation of ms105 FIJI script 1
-// JEP 07/2024
+// JEP 09/2024
 
-// V3 - define ROI around cell
-// Current version: V3-11-4
+// V4 - define ROI around cell
+// Current version: V4
 
 // Using process folder FIJI template
 #@ File (label = "Input directory", style = "directory") input
@@ -34,6 +34,7 @@ function processFile(input, output, file) {
 		print(origfn + "_cell already exists. Image skipped.");
 		return;		
 	}
+	if (origfn=="0-tetraspeck") return; // Skip registration file
 
 	// Open file and set up workspace
 	s = "open=["+input+File.separator+file+"] autoscale color_mode=Composite rois_import=[ROI manager] view=Hyperstack stack_order=XYCZT";
@@ -44,7 +45,7 @@ function processFile(input, output, file) {
 	run("Duplicate...", "duplicate channels=1");
 
 	// Draw ROI around cell and save it	
-	cellROI(output, origfn);		// output file name = origfn + "_cell.roi
+	cellROI(output, origfn);		// output file name = origfn + "_cell.roi"
 
 	run("Close All");
 }
