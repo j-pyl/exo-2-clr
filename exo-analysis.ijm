@@ -1,8 +1,8 @@
 // Adaptation of ms105 FIJI script 1
-// JEP 08/2024
+// JEP 09/2024
 
-// V3 - analyse for exocytic events
-// Current version: V3-11-6 (or V3-13-1?)
+// V4 - analyse for exocytic events
+// Current version: V4-0-0
 
 
 // Using process folder FIJI template
@@ -12,7 +12,6 @@
 #@ Boolean (label = "2-channel analysis", value = true) twoclr //// Add this in V4
 
 // NEED TO ADD IMAGE REGISTRATION FOR SLIDES.
-// Maybe with global variable?
 // #@ Boolean (label = "Register images", value = false) regi
 
 setBatchMode(true);
@@ -34,11 +33,10 @@ function processFolder(input) {
 
 
 function processFile(input, output, file) {
-	// Leave the print statements until things work, then remove them.
 	print("Processing: " + input + File.separator + file);
 	origfn = File.getNameWithoutExtension(file);
 	
-	//// Skip if file exists because it will be run in def-cell-ROI and this will depend on its results?
+	// Skip if cell ROI doesn't exist or analysis already performed
 	if (File.exists(output + "/" + origfn + "_cell.roi") == false) {
 		print(output + "/" + origfn + "_cell.roi does not exist. Unable to run analysis on this image.");
 		return;
@@ -47,6 +45,7 @@ function processFile(input, output, file) {
 		print(output + "/" + origfn + "_rcy-0_s_IntensityData.csv already exists. Skipping analysis of this image.");
 		return;
 	}
+	if (origfn=="0-tetraspeck") return; // Skip registration file
 
 	s = "open=["+input+File.separator+file+"] autoscale color_mode=Composite rois_import=[ROI manager] view=Hyperstack stack_order=XYCZT";
 	run("Bio-Formats Importer", s);
@@ -60,8 +59,10 @@ function processFile(input, output, file) {
 //			print("Cannot perform registration:\n" + input + "/0-tetraspeck-regi.tif\ndoes not exist")
 //		}
 //		// Run Registration – need NanoJ-core plugin?
-//		run("Register Channels - Apply", "open=" + input + "/0-tetraspeck-regi.tif"); //// This seems to work? I ran above on my computer and it began to do so normally?
-//		////Had some warnings/errors about using hyperstack(?) but then was running registration? I aborted the operation because it was taking very long on my computer.
+//		run("Register Channels - Apply", "open=" + input + "/0-tetraspeck-regi.tif");
+//		//// This seems to work? I ran above on my computer and it began to do so normally?
+//		////Had some warnings/errors about using hyperstack(?) but then was running registration?
+//		////I aborted the operation because it was taking very long on my computer.
 //		// Reorganise images & titles
 //		regi-img = getTitle();
 //		selectImage(origft);
@@ -76,7 +77,7 @@ function processFile(input, output, file) {
 
 	// Create summary log file
 	f = File.open(output + "/" + origfn + "_exo-log.txt");	
-	print(f, "EXO-ANALYSIS VERSION 3-11-6\n");
+	print(f, "EXO-ANALYSIS VERSION 4-0-0\n");
 	getDateAndTime(yr, mo, dOfW, dOfMo, hr, minu, sec, msec);
 	currDate = ""+ yr +"."+ IJ.pad((mo+1),2) +"."+ IJ.pad(dOfMo,2);
 	currTime = IJ.pad(hr,2) +":"+ IJ.pad(minu,2) +":"+ IJ.pad(sec,2);
@@ -96,8 +97,8 @@ function processFile(input, output, file) {
 	// SINGLE CHANNEL ANALYSIS
 	if (twoclr == false) {
 		selectImage(origft)
-		recycle = 0;				//// This is necessary to keep with the current code, without adding tons more lines
-		run("Duplicate...", "title=template duplicate channels=1"); //// Does this work even when only one channel is available?
+		recycle = 0;
+		run("Duplicate...", "title=template duplicate channels=1");
 		
 		// Detect puncta on template
 		cArea = template_spot_detection(output, origfn, recycle);
@@ -105,7 +106,7 @@ function processFile(input, output, file) {
 		exo_analysis_general(output, "template", origfn, recycle, cArea);
 		
 		run("Close All");
-		return							//// Does this return out of the 'if' loop or out of 'processFile'?
+		return;
 	}
 
 	// TWO CHANNEL ANALYSIS
@@ -133,7 +134,6 @@ function processFile(input, output, file) {
 			
 			exo_analysis_general(output, "template", origfn, recycle, cArea);
 			exo_analysis_general(output, "subject", origfn, recycle, cArea);
-			// I know this code is doubled and not 'pretty'/conventional, but this is the way I can integrate recycle number into the sequence
 			
 		} else {
 			print("Too many recycles! Recycles >= 1");
@@ -182,8 +182,11 @@ function template_spot_detection (output, fn, recycle) {
 		roiManager("select", 0);
 		roiManager("measure");
 		promi += 1;
-	} while (((nResults/cellArea) > 0.55) && (promi < 35)); //// Value approximately calculated from JEP042 IRAP-pHl dish1_001, with ROI drawn around cell, measure area, and then find maxima with promi >14-15 //// Can do this way, or by starting with a high prominence going down
-	//showMessage("Maxima Result", fn + "\nRecycle = " + recycle + "\n\nProminence > " + (promi - 1) + "\nMaxima detected: " + nResults); //// Remove line when done (when finalising/completing code)
+	} while (((nResults/cellArea) > 0.55) && (promi < 35));
+	//// Value approximately calculated from JEP042 IRAP-pHl dish1_001, with ROI drawn around cell, measure area, and then find maxima with promi >14-15
+	//// Can do this way, or by starting with a high prominence going down
+	//showMessage("Maxima Result", fn + "\nRecycle = " + recycle + "\n\nProminence > " + (promi - 1) + "\nMaxima detected: " + nResults); 
+	//// Remove line above when done (when finalising/completing code)
 	File.append("Recycle = " + recycle + "\nProminence > " + (promi - 1) + "\nMaxima detected: " + nResults + "\n\n", output + "/" + fn + "_exo-log.txt");
 	
 	run("Clear Results");
@@ -194,13 +197,13 @@ function template_spot_detection (output, fn, recycle) {
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------
-// This function runs without error. No need to change
+// Get intensity data for each ROI
 function exo_analysis_general (output, base, fn, recycle, cell_area) { //// base = base file name (input template or subject when calling this function).
 	selectImage(base);										
 	getDimensions(width, height, channels, slices, frames);
 	if (base == "template") {
 		imageName = fn + "_recy-" + recycle + "_t";
-	} else if (base == "subject") {							//// this bit might be wrong. i.e. Assigning these values to imageName
+	} else if (base == "subject") {
 		imageName = fn + "_recy-" + recycle + "_s";
 	}
 	
@@ -221,11 +224,12 @@ function exo_analysis_general (output, base, fn, recycle, cell_area) { //// base
 	print(f, str);
 
 
+	// ROI size & save intensity data
 	for (i = 0; i < frames; i++) {
 		Stack.setFrame(i+1);
 		str = "";
 		for (j = 0; j < xCoords.length; j++) {
-			makeOval(xCoords[j] - 2, yCoords[j] - 2, 4, 4);
+			makeOval(xCoords[j] - 3, yCoords[j] - 3, 7, 7);
 			getStatistics(area, mean, min, max, std, histogram);
 			str = str + mean + ",";
 		}
@@ -272,8 +276,5 @@ function exo_analysis_general (output, base, fn, recycle, cell_area) { //// base
 	print (f, scaleunit);
 	print (f, pixelScale);
 	File.close(f);
-	// when running this section alone, a log window is open at the end. Maybe add the two following lines?
-//	selectWindow("Log");
-//	run("Close");
 }
 //------------------------------------------------------------------------------------------------------------------------------------
