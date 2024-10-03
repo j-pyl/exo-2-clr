@@ -9,8 +9,8 @@
 #@ File (label = "Output directory", style = "directory") output
 #@ File (label = "CSV directory", style = "directory") csvdir
 #@ String (label = "Image file suffix", value = ".nd2") suffix 
-//#@ String (label = "File prefix", value = "") prefix		//// Maybe need to strip prefix 'JEP0??_' from filename.
-															//// Inversely, it might be simpler to just add prefix to csv file when searching.
+#@ String (label = "File prefix", value = "") prefix
+
 
 // Choose how to run program
 Dialog.create("Select Program Mode");
@@ -46,18 +46,18 @@ function processFolder(input, script_mode, opi_mode) {
 	list = Array.sort(list);
 	for (i = 0; i < list.length; i++) {
 		if(File.isDirectory(input + File.separator + list[i]))
-			processFolder(input + File.separator + list[i], script_mode, opi_mode);
+			processFolder(input + File.separator + list[i], script_mode, opi_mode, prefix);
 		if(endsWith(list[i], suffix))
-			processFile(input, output, list[i], csvdir, script_mode, opi_mode);
+			processFile(input, output, list[i], csvdir, script_mode, opi_mode, prefix);
 	}
 }
 
-function processFile(input, output, file, csvdir, script_mode, opi_mode) {
+function processFile(input, output, file, csvdir, script_mode, opi_mode, prefix) {
 	print("Processing: " + input + File.separator + file);
 	origfn = File.getNameWithoutExtension(file);
 	csv_suffix = "_t_peak-xyt.csv";
-	csvf_0t = origfn+"_recy-"+0+csv_suffix;
-	csvf_1t = origfn+"_recy-"+1+csv_suffix;
+	csvf_0t = prefix+origfn+"_recy-"+0+csv_suffix;
+	csvf_1t = prefix+origfn+"_recy-"+1+csv_suffix;
 	
 	
 	// Check if either csv exists and open relevant ones
