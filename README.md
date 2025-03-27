@@ -40,7 +40,8 @@ A more detailed summary can be in the sections below, or in even deeper detail i
 
 ## Usage
 The following sections provide instructions to use this code.
-**Preface: ** All files used in this project employed the following nomenclature: `{yymmdd}_{protein1}-pHmS_{protein2}-pHl_100x-SoRa.nd2`
+**Preface: **Files used in this project employed the following nomenclature: `yymmdd_HeLa-wt_{protein1}-pHmS_{protein2}-pHl_100x-SoRa/dish1_001.nd2`
+(The dish number was a single digit, and the final number was triple digits: 001, 002, ...)
 
 Below is the sequential order of programs to run.
 1. FIJI
