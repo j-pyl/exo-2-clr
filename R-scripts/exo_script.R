@@ -79,6 +79,7 @@ sparklines_0t <- ggplot() +
         strip.background = element_blank(),
         strip.text.x = element_blank())
 
+sparklines_0t
 ggsave("sparklines_0t.png", sparklines_0t, path = "Output/Plots", width = 100, height = 100, units = "mm", dpi = 300, bg = "white")
 
 sparklines_1t <- ggplot() +
@@ -94,4 +95,5 @@ sparklines_1t <- ggplot() +
         strip.background = element_blank(),
         strip.text.x = element_blank())
 
+sparklines_1t
 ggsave("sparklines_1t.png", sparklines_1t, path = "Output/Plots", width = 100, height = 100, units = "mm", dpi = 300, bg = "white")
