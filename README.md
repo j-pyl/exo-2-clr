@@ -1,7 +1,8 @@
 # 2-Colour Exocytosis Detection and Analysis <!-- omit in toc -->
 This workflow was edited from code previously written by S Royle and M Sittewelle to detect and analyse exocytic events in cells expressing two, differently coloured, pH-sensitive fluorescent reporters simultaneously recorded with two cameras.
-See publication [publication](https://doi.org/10.26508/lsa.202302406) and [associated repository](https://github.com/quantixed/p063p036/tree/main). The original FIJI code adapted into Batch mode can also be found here: [`supp_info/V1_1-clr-analysis_p-folder.ijm`](https://github.com/j-pyl/exo-2-clr/blob/main/supp_info/V1_1-clr-analysis_p-folder.ijm).
 In other words, this workflow is used to detect exocytic events in two separate channels.
+
+See also [Sittewelle & Royle 2024](https://doi.org/10.26508/lsa.202302406) and associated [GitHub repository](https://github.com/quantixed/p063p036/tree/main). The original FIJI code adapted into Batch mode can also be found here: [`supp_info/V1_1-clr-analysis_p-folder.ijm`](https://github.com/j-pyl/exo-2-clr/blob/main/supp_info/V1_1-clr-analysis_p-folder.ijm).
 
 ## Contents <!-- omit in toc -->
 - [How this works](#how-this-works)
